@@ -1,0 +1,86 @@
+# incluso da builder.sh
+# la DIR_BASE e` definita in builder.sh
+
+DATA=`date +'%Y%m%d'`
+ORA=`date +'%H%M%S'`
+TIMESTAMP="$DATA-$ORA"
+
+TOMCAT_MANAGER_CONTEXT="manager"
+TOMCAT_MANAGER_USERNAME="tomcat"
+TOMCAT_MANAGER_PASSWORD="tomcat"
+
+DEFAULT_TEMPLATE="base"
+
+DIR_BIN="$DIR_BASE/bin"
+DIR_LOG="$DIR_BASE/log"
+DIR_CONF="$DIR_BASE/conf"
+DIR_CONF_TEMPLATE_SKELETONS="$DIR_BASE/conf/template-skeletons"
+
+# directory dove vengono copiati gli war da deployare
+DIR_APPS="$DIR_BASE/apps"
+
+# la directory che viene eventualmente utilizzata come JAVA_HOME (vedi sotto)
+DIR_JDK="$DIR_BASE/jdk"
+
+# questa directory contiene i templates dei vari tomcat
+# se per qualche motivo un'istanza non ha un template riconoscibile
+# allora verra` utilizzato il primo template trovato
+DIR_TEMPLATES="$DIR_BASE/templates"
+
+# questa directory puo` essere settata dove ti pare
+# conterra` le istanze di tomcat controllate da questo script
+DIR_ISTANZE="$DIR_BASE/istanze"
+
+# questo file conterrebbe le relazioni istanza <--> template
+# per ora non e` utilizzato
+FILE_ISTANZE="$DIR_CONF/istanze.txt"
+
+FILE_LOG="$DIR_LOG/$DATA.log"
+FILE_PID="$DIR_BASE/tomcatctl.pid"
+
+
+if hash wget
+then
+	HTTP_BIN="wget -qO- --no-proxy"
+else
+	echo "impossibile trovare un client http valido!"
+	echo "installare un client http valido"
+	echo "clients validi: wget, curl"
+	exit 1
+fi
+
+if uname | grep -i "cygwin" > /dev/null
+then
+	OS="cygwin"
+else
+	OS="altro"
+fi
+
+if [ -d "$DIR_JDK" ]
+then
+	export JAVA_HOME="$DIR_JDK"
+fi
+
+echolog()
+{
+	logmesg="`date +'%Y%m%d.%H%M%S'` >>> $1"
+	echo "$logmesg"
+	echo "$logmesg" >> "$FILE_LOG"
+}
+
+
+
+tomcatctl_codice_istanza_is_valido()
+{
+	if [ -z "$1" ]
+	then
+		return 1
+	fi
+	
+	if [ `expr length $1` -eq 2 ] && [ "$1" -eq "$1" ] 2>/dev/null
+	then
+		return 0
+	fi
+	
+	return 1
+}

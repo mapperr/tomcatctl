@@ -1,0 +1,51 @@
+# incluso da builder.sh
+# la DIR_BASE e` definita in builder.sh
+
+DATA=`date +'%Y%m%d'`
+ORA=`date +'%H%M%S'`
+TIMESTAMP="$DATA-$ORA"
+
+DIR_MODULI="$DIR_BASE/moduli"
+DIR_ANT="$DIR_MODULI/ant"
+DIR_IVY="$DIR_MODULI/ivy"
+
+# la directory che viene eventualmente utilizzata come JAVA_HOME (vedi sotto)
+DIR_JDK="$DIR_MODULI/jdk"
+
+DIR_BIN="$DIR_BASE/bin"
+DIR_REPO="$DIR_BASE/repo"
+DIR_DIST="$DIR_BASE/dist"
+DIR_DIST_AUTO="$DIR_BASE/dist-auto"
+DIR_LOG="$DIR_BASE/log"
+DIR_CONF="$DIR_BASE/conf"
+
+
+FILE_PROGETTI="$DIR_CONF/progetti.txt"
+FILE_LOG="$DIR_LOG/$DATA.log"
+FILE_PID="$DIR_BASE/buildctl.pid"
+
+SVN_USER="batchcabellab"
+SVN_PASS="b5C4e8!b"
+SVN_BIN="svn"
+
+
+if uname | grep -i "cygwin" > /dev/null
+then
+	OS="cygwin"
+else
+	OS="altro"
+fi
+
+
+if [ -d "$DIR_JDK" ]
+then
+	export JAVA_HOME="$DIR_JDK"
+fi
+
+
+echolog()
+{
+	logmesg="`date +'%Y%m%d.%H%M%S'` >>> $1"
+	echo "$logmesg"
+	echo "$logmesg" >> "$FILE_LOG"
+}
