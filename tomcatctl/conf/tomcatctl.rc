@@ -5,10 +5,16 @@ DATA=`date +'%Y%m%d'`
 ORA=`date +'%H%M%S'`
 TIMESTAMP="$DATA-$ORA"
 
+# questa roba va tenuta allineata con la roba nella cartella conf
+# dei vari templates (la skeleton)
 TOMCAT_MANAGER_CONTEXT="manager"
 TOMCAT_MANAGER_USERNAME="tomcat"
 TOMCAT_MANAGER_PASSWORD="tomcat"
 
+# utente con cui vengono avviati/terminati i tomcat
+CATALINA_USER="tomcat"
+
+# assicurarsi che esista almeno sto template
 DEFAULT_TEMPLATE="base"
 
 DIR_BIN="$DIR_BASE/bin"
@@ -19,12 +25,12 @@ DIR_CONF_TEMPLATE_SKELETONS="$DIR_BASE/conf/template-skeletons"
 # directory dove vengono copiati gli war da deployare
 DIR_APPS="$DIR_BASE/apps"
 
-# la directory che viene eventualmente utilizzata come JAVA_HOME (vedi sotto)
+# la directory che viene eventualmente utilizzata come JAVA_HOME
 DIR_JDK="$DIR_BASE/jdk"
 
 # questa directory contiene i templates dei vari tomcat
 # se per qualche motivo un'istanza non ha un template riconoscibile
-# allora verra` utilizzato il primo template trovato
+# allora verra` utilizzato il template di default
 DIR_TEMPLATES="$DIR_BASE/templates"
 
 # questa directory puo` essere settata dove ti pare
@@ -32,23 +38,29 @@ DIR_TEMPLATES="$DIR_BASE/templates"
 DIR_ISTANZE="$DIR_BASE/istanze"
 
 # questo file conterrebbe le relazioni istanza <--> template
-# per ora non e` utilizzato
-FILE_ISTANZE="$DIR_CONF/istanze.txt"
+# per ora non e` utilizzato, si fa con le cartelle nella directory delle istanze
+# FILE_ISTANZE="$DIR_CONF/istanze.txt"
 
 FILE_LOG="$DIR_LOG/$DATA.log"
 FILE_PID="$DIR_BASE/tomcatctl.pid"
 
+FILENAME_TEMPLATE="TEMPLATE"
+FILENAME_TAG="TAG"
 
+
+# controllo che ci sia un client http valido e lo setto
+# il client http serve principalmente a comunicare col tomcat manager
 if hash wget
 then
 	HTTP_BIN="wget -qO- --no-proxy"
 else
 	echo "impossibile trovare un client http valido!"
 	echo "installare un client http valido"
-	echo "clients validi: wget, curl"
+	echo "clients validi: wget"
 	exit 1
 fi
 
+# rilevo ambienti che hanno bisogno di trattamenti particolari
 if uname | grep -i "cygwin" > /dev/null
 then
 	OS="cygwin"
@@ -56,31 +68,19 @@ else
 	OS="altro"
 fi
 
+# setto la JAVA_HOME
 if [ -d "$DIR_JDK" ]
 then
 	export JAVA_HOME="$DIR_JDK"
 fi
+
+# --------------------------------------------
+# funzioni globali
+# --------------------------------------------
 
 echolog()
 {
 	logmesg="`date +'%Y%m%d.%H%M%S'` >>> $1"
 	echo "$logmesg"
 	echo "$logmesg" >> "$FILE_LOG"
-}
-
-
-
-tomcatctl_codice_istanza_is_valido()
-{
-	if [ -z "$1" ]
-	then
-		return 1
-	fi
-	
-	if [ `expr length $1` -eq 2 ] && [ "$1" -eq "$1" ] 2>/dev/null
-	then
-		return 0
-	fi
-	
-	return 1
 }

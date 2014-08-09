@@ -40,14 +40,19 @@ helpmsg()
 	echo ""
 	echo "comandi:"
 	echo ""
-	echo "- add [template] [codice_istanza]"
+	echo "- add [template] [codice_istanza] [tag_istanza]"
 	echo ""
 	echo "		crea un'istanza di tomcat dal template [template] (o da quello di default se omesso)"
-	echo "		e gli assegna un codice istanza a caso oppure [codice_istanza] se specificato"
+	echo "		e gli assegna un codice istanza non ancora utilizzato oppure [codice_istanza] se specificato"
+	echo "		inoltre gli assegna un tag se specificato"
 	echo ""
 	echo "- rm <codice_istanza>"
 	echo ""
 	echo "		elimina l'istanza a cui e' stato assegnato il codice <codice_istanza>"
+	echo ""
+	echo "- cp <codice_istanza_originale> [codice_istanza_clonata] [tag_istanza_clonata]"
+	echo ""
+	echo "		clona l'istanza specificata"
 	echo ""
 	echo "- ls"
 	echo ""
@@ -65,12 +70,12 @@ helpmsg()
 	echo ""
 	echo "		mostra informazioni sullo stato del tomcat"
 	echo ""
-	echo "- deploy <codice_istanza> <path_war> [context_path] [version]"
+	echo "- deploy <codice_istanza> <path_war> <context_path> [version]"
 	echo ""
 	echo "		effettua il deploy del war passato come argomento con il context path specificato"
 	echo "		se il context path e' gia' utilizzato, allora viene effettuato prima l'undeploy dell'applicazione che ha quel context path"
 	echo ""
-	echo "- undeploy <codice_istanza> <context_path> [version]"
+	echo "- undeploy <codice_istanza> <context_path> <version>"
 	echo ""
 	echo "		effettua l'undeploy dell'applicazione che ha il context path passato come argomento"
 	echo ""
@@ -84,6 +89,22 @@ helpmsg()
 	echo ""
 }
 
+
+tomcatctl_codice_istanza_is_valido()
+{
+	if [ -z "$1" ]
+	then
+		return 1
+	fi
+	
+	if [ `expr length $1` -eq 2 ] && [ "$1" -eq "$1" ] 2>/dev/null
+	then
+		return 0
+	fi
+	
+	return 1
+}
+
 tomcatctl_get_template()
 {
 	if [ -z "$1" ]
@@ -93,7 +114,7 @@ tomcatctl_get_template()
 	fi
 	istanza="$1"
 	
-	file_template="$DIR_ISTANZE/$istanza/TEMPLATE"
+	file_template="$DIR_ISTANZE/$istanza/$FILENAME_TEMPLATE"
 	
 	if [ -f "$file_template" ]
 	then
@@ -145,7 +166,7 @@ tomcatctl_list()
 	
 	echo "#"
 	echo "# directory istanze: [$DIR_ISTANZE]"
-	echo "# istanza  [stato]  (template)"
+	echo "# istanza  [stato]  (template)  {tag}"
 	echo "#"
 	for directory in `ls $DIR_ISTANZE | sort`
 	do
@@ -155,7 +176,7 @@ tomcatctl_list()
 			if [ $? -ne 0 ]
 			then
 				template="nessuno: settato il template di default [$DEFAULT_TEMPLATE]"
-				echo "$DEFAULT_TEMPLATE" > "$DIR_ISTANZE/$directory/TEMPLATE"
+				echo "$DEFAULT_TEMPLATE" > "$DIR_ISTANZE/$directory/$FILENAME_TEMPLATE"
 			fi
 			
 			tomcatctl_checkup_istanza "$directory"
@@ -165,7 +186,14 @@ tomcatctl_list()
 			then
 				stato="down"
 			fi
-			echo "  $directory	[$stato]  ($template)"
+			
+			tag=""
+			if [ -r "$DIR_ISTANZE/$directory/$FILENAME_TAG" ]
+			then
+				tag=`cat $DIR_ISTANZE/$directory/$FILENAME_TAG`
+			fi
+			
+			echo "  $directory	[$stato]  ($template)  {$tag}"
 		fi
 	done
 }
@@ -193,12 +221,26 @@ tomcatctl_start()
 		return 3
 	fi
 	
-	template=`cat "$DIR_ISTANZA/TEMPLATE"`
+	template=`cat "$DIR_ISTANZA/$FILENAME_TEMPLATE"`
 	
 	export CATALINA_HOME="$DIR_TEMPLATES/$template"
 	export CATALINA_BASE="$DIR_ISTANZA"
 	
-	$CATALINA_HOME/bin/startup.sh
+	if [ -z "$CATALINA_USER" ] || [ "$CATALINA_USER" = "`whoami`" ]
+	then
+		$CATALINA_HOME/bin/startup.sh
+	else
+		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
+		RET=$?
+		
+		# se non si hanno i permessi per utilizzare "su" il comando ritorna 126:
+		# "126 if subshell is found but cannot be invoked"
+		# https://www.gnu.org/software/coreutils/manual/html_node/su-invocation.html
+		if [ $RET -eq 126 ]
+		then
+			sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
+		fi
+	fi
 }
 
 tomcatctl_stop()
@@ -224,12 +266,26 @@ tomcatctl_stop()
 		return 3
 	fi
 	
-	template=`cat "$DIR_ISTANZA/TEMPLATE"`
+	template=`cat "$DIR_ISTANZA/$FILENAME_TEMPLATE"`
 	
 	export CATALINA_HOME="$DIR_TEMPLATES/$template"
 	export CATALINA_BASE="$DIR_ISTANZA"
 	
-	$CATALINA_HOME/bin/shutdown.sh
+	if [ -z "$CATALINA_USER" ] || [ "$CATALINA_USER" = "`whoami`" ]
+	then
+		$CATALINA_HOME/bin/shutdown.sh
+	else
+		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2> /dev/null
+		RET=$?
+		
+		# se non si hanno i permessi per utilizzare "su" il comando ritorna 126:
+		# "126 if subshell is found but cannot be invoked"
+		# https://www.gnu.org/software/coreutils/manual/html_node/su-invocation.html
+		if [ $RET -eq 126 ]
+		then
+			sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER"
+		fi
+	fi
 }
 
 tomcatctl_log()
@@ -390,7 +446,7 @@ tomcatctl_status()
 	fi
 	
 	echo "istanza [$istanza] "
-	echo "template: `cat $DIR_ISTANZE/$istanza/TEMPLATE`"
+	echo "template: `cat $DIR_ISTANZE/$istanza/$FILENAME_TEMPLATE`"
 	
 	tomcatctl_checkup_istanza "$istanza"
 	RUNNING=$?
@@ -426,6 +482,8 @@ tomcatctl_create()
 	fi
 	
 	istanza="$2"
+	tag="$3"
+	
 	if [ -z "$istanza" ]
 	then
 		istanza="00"
@@ -471,7 +529,12 @@ tomcatctl_create()
 	mkdir -p "$DIR_ISTANZA/work"
 	mkdir -p "$DIR_ISTANZA/temp"
 	
-	echo "$template" > "$DIR_ISTANZA/TEMPLATE"
+	echo "$template" > "$DIR_ISTANZA/$FILENAME_TEMPLATE"
+	
+	if ! [ -z "$tag" ]
+	then
+		echo "$tag" > "$DIR_ISTANZA/$FILENAME_TAG"
+	fi
 	
 	echolog "creata istanza [$istanza] con template [$template] in [$DIR_ISTANZA]"
 }
@@ -527,6 +590,80 @@ tomcatctl_delete()
 		echolog "annullata eliminazione istanza [$istanza]"
 		return 1
 	fi
+}
+
+tomcatctl_clona_istanza()
+{
+	istanza_originale="$1"
+	
+	if [ -z "$istanza_originale" ]
+	then
+		helpmsg
+		return 1
+	fi
+	
+	DIR_ISTANZA="$DIR_ISTANZE/$istanza_originale"
+	if ! [ -d "$DIR_ISTANZA" ]
+	then
+		echolog "istanza [$istanza_originale] inesistente"
+		return 1
+	fi
+	
+	istanza="$2"
+	tag="$3"
+	
+	if [ -z "$istanza" ]
+	then
+		istanza="00"
+		
+		while [ -d "$DIR_ISTANZE/$istanza" ]
+		do
+			istanza=`expr $istanza + 1`
+			if [ $istanza -lt 10 ]
+			then
+				istanza="0$istanza"
+			fi
+		done
+	else
+		if ! tomcatctl_codice_istanza_is_valido "$istanza"
+		then
+			echo "il codice istanza non e' un codice valido"
+			echo "il codice deve essere composto esattamente da due cifre"
+			return 3
+		fi
+		if [ -d "$DIR_ISTANZE/$istanza" ]
+		then
+			echolog "l'istanza [$istanza] e' gia' esistente, sceglierne un'altra"
+			return 4
+		fi
+	fi
+	
+	DIR_ISTANZA_ORIGINALE="$DIR_ISTANZE/$istanza_originale"
+	DIR_ISTANZA="$DIR_ISTANZE/$istanza"
+	
+	mkdir -p "$DIR_ISTANZA"
+	if [ $? -ne 0 ]
+	then
+		echolog "impossibile creare la directory [$DIR_ISTANZA]"
+		return 1
+	fi
+	
+	cp -r "$DIR_ISTANZA_ORIGINALE/bin" "$DIR_ISTANZA/"
+	cp -r "$DIR_ISTANZA_ORIGINALE/conf" "$DIR_ISTANZA/"
+	cp -r "$DIR_ISTANZA_ORIGINALE/lib" "$DIR_ISTANZA/lib"
+	mkdir -p "$DIR_ISTANZA/logs"
+	cp -r "$DIR_ISTANZA_ORIGINALE/webapps" "$DIR_ISTANZA/webapps"
+	mkdir -p "$DIR_ISTANZA/work"
+	mkdir -p "$DIR_ISTANZA/temp"
+	
+	cp -r "$DIR_ISTANZA_ORIGINALE/$FILENAME_TEMPLATE" "$DIR_ISTANZA/$FILENAME_TEMPLATE"
+	
+	if ! [ -z "$tag" ]
+	then
+		echo "$tag" > "$DIR_ISTANZA/$FILENAME_TAG"
+	fi
+	
+	echolog "clonata istanza [$istanza_originale] in [$DIR_ISTANZA]"
 }
 
 tomcatctl_clean()
@@ -663,6 +800,14 @@ then
 	tomcatctl_clean $@
 	exit $?
 fi
+
+if [ "$1" = "cp" ]
+then
+	shift
+	tomcatctl_clona_istanza $@
+	exit $?
+fi
+
 
 helpmsg
 exit 0
