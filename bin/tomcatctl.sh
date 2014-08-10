@@ -230,6 +230,8 @@ tomcatctl_start()
 	then
 		$CATALINA_HOME/bin/startup.sh
 	else
+		echolog "avvio istanza con l'utente [$CATALINA_USER]"
+		
 		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
 		RET=$?
 		
@@ -238,7 +240,21 @@ tomcatctl_start()
 		# https://www.gnu.org/software/coreutils/manual/html_node/su-invocation.html
 		if [ $RET -eq 126 ]
 		then
+			echolog "permessi insufficienti per l'utilizzo di 'su', tentativo di bypass con 'sudo'"
 			sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
+			RET2=$?
+			
+			if [ $RET2 -ne 0 ]
+			then
+				echolog "impossibile avviare l'istanza con l'utente [$CATALINA_USER] con 'sudo'"
+				return 1
+			fi
+		fi
+		
+		if [ $RET -ne 0 ]
+		then
+			echolog "impossibile avviare l'istanza con l'utente [$CATALINA_USER]"
+			return 1
 		fi
 	fi
 }
