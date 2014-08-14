@@ -54,21 +54,31 @@ helpmsg()
 	echo ""
 	echo "		clona l'istanza specificata"
 	echo ""
+	echo "- attach <path_catalina_home> [codice_istanza] [tag_istanza]"
+	echo ""
+	echo "		aggancia l'istanza di tomcat <path_catalina_home>"
+	echo "		e gli assegna un codice istanza non ancora utilizzato oppure [codice_istanza] se specificato"
+	echo "		inoltre gli assegna un tag se specificato"
+	echo ""
+	echo "- detach <codice_istanza>"
+	echo ""
+	echo "		sgancia l'istanza virtuale a cui e' stato assegnato il codice <codice_istanza>"
+	echo ""
 	echo "- ls"
 	echo ""
 	echo "		lista dei templates e delle istanze"
 	echo ""
-	echo "- clean"
+	echo "- apps <codice_istanza>"
 	echo ""
-	echo "		elimina i file temporanei"
+	echo "		lista delle applicazioni deployate e relativo status"
 	echo ""
 	echo "- start | stop | restart <codice_istanza>"
 	echo ""
 	echo "		controllo del tomcat"
 	echo ""
-	echo "- status <codice_istanza>"
+	echo "- info <codice_istanza>"
 	echo ""
-	echo "		mostra informazioni sullo stato del tomcat"
+	echo "		mostra informazioni sullo stato dell'istanza"
 	echo ""
 	echo "- deploy <codice_istanza> <path_war> <context_path> [version]"
 	echo ""
@@ -79,13 +89,13 @@ helpmsg()
 	echo ""
 	echo "		effettua l'undeploy dell'applicazione che ha il context path passato come argomento"
 	echo ""
-	echo "- apps <codice_istanza>"
-	echo ""
-	echo "		lista delle applicazioni deployate"
-	echo ""
 	echo "- log <codice_istanza>"
 	echo ""
 	echo "		mostra il catalina.out dell'istanza <codice_istanza>"
+	echo ""
+	echo "- clean"
+	echo ""
+	echo "		elimina i file temporanei"
 	echo ""
 }
 
@@ -125,7 +135,7 @@ tomcatctl_get_template()
 	return 1
 }
 
-tomcatctl_checkup_istanza()
+tomcatctl_status()
 {
 	if [ -z "$1" ]
 	then
@@ -166,20 +176,25 @@ tomcatctl_list()
 	
 	echo "#"
 	echo "# directory istanze: [$DIR_ISTANZE]"
-	echo "# istanza  [stato]  (template)  {tag}"
+	echo "# istanza  [stato]  {tag}  (template)"
 	echo "#"
 	for directory in `ls $DIR_ISTANZE | sort`
 	do
 		if tomcatctl_codice_istanza_is_valido "$directory"
 		then
-			template=`tomcatctl_get_template $directory`
-			if [ $? -ne 0 ]
+			if [ -L "$DIR_ISTANZE/$directory" ]
 			then
-				template="nessuno: settato il template di default [$DEFAULT_TEMPLATE]"
-				echo "$DEFAULT_TEMPLATE" > "$DIR_ISTANZE/$directory/$FILENAME_TEMPLATE"
+				template="-->`readlink $DIR_ISTANZE/$directory`"
+			else
+				template=`tomcatctl_get_template $directory`
+				if [ $? -ne 0 ]
+				then
+					template="nessuno: settato il template di default [$DEFAULT_TEMPLATE]"
+					echo "$DEFAULT_TEMPLATE" > "$DIR_ISTANZE/$directory/$FILENAME_TEMPLATE"
+				fi
 			fi
 			
-			tomcatctl_checkup_istanza "$directory"
+			tomcatctl_status "$directory"
 			RET=$?
 			stato=" up "
 			if [ $RET -ne 0 ]
@@ -193,7 +208,7 @@ tomcatctl_list()
 				tag=`cat $DIR_ISTANZE/$directory/$FILENAME_TAG`
 			fi
 			
-			echo "  $directory	[$stato]  ($template)  {$tag}"
+			echo "  $directory	[$stato]  {$tag}  ($template)"
 		fi
 	done
 }
@@ -226,11 +241,30 @@ tomcatctl_start()
 	export CATALINA_HOME="$DIR_TEMPLATES/$template"
 	export CATALINA_BASE="$DIR_ISTANZA"
 	
+	# controllo se l'istanza e` attached
+	if [ -L "$DIR_ISTANZA" ]
+	then
+		export CATALINA_HOME="`readlink $DIR_ISTANZE/$istanza`"
+		tomcatctl_attached_start
+		RET=$?
+		if [ $RET -eq 0 ]
+		then
+			return 0
+		fi
+	fi
+	
 	if [ -z "$CATALINA_USER" ] || [ "$CATALINA_USER" = "`whoami`" ]
 	then
 		$CATALINA_HOME/bin/startup.sh
 	else
 		echolog "avvio istanza con l'utente [$CATALINA_USER]"
+		
+		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" sudo -u "$CATALINA_USER" bash "$CATALINA_HOME/bin/startup.sh" 2> /dev/null
+		RET=$?
+		if [ $RET -eq 0 ]
+		then
+			return 0
+		fi
 		
 		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
 		RET=$?
@@ -287,10 +321,31 @@ tomcatctl_stop()
 	export CATALINA_HOME="$DIR_TEMPLATES/$template"
 	export CATALINA_BASE="$DIR_ISTANZA"
 	
+	# controllo se l'istanza e` attached
+	if [ -L "$DIR_ISTANZA" ]
+	then
+		export CATALINA_HOME="`readlink $DIR_ISTANZE/$istanza`"
+		tomcatctl_attached_stop
+		RET=$?
+		if [ $RET -eq 0 ]
+		then
+			return 0
+		fi
+	fi
+	
 	if [ -z "$CATALINA_USER" ] || [ "$CATALINA_USER" = "`whoami`" ]
 	then
 		$CATALINA_HOME/bin/shutdown.sh
 	else
+		echolog "stop istanza con l'utente [$CATALINA_USER]"
+		
+		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" sudo -u "$CATALINA_USER" bash "$CATALINA_HOME/bin/shutdown.sh" 2> /dev/null
+		RET=$?
+		if [ $RET -eq 0 ]
+		then
+			return 0
+		fi
+		
 		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2> /dev/null
 		RET=$?
 		
@@ -299,8 +354,74 @@ tomcatctl_stop()
 		# https://www.gnu.org/software/coreutils/manual/html_node/su-invocation.html
 		if [ $RET -eq 126 ]
 		then
-			sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER"
+			echolog "permessi insufficienti per l'utilizzo di 'su', tentativo di bypass con 'sudo'"
+			sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2> /dev/null
+			RET2=$?
+			
+			if [ $RET2 -ne 0 ]
+			then
+				echolog "impossibile stopppare l'istanza con l'utente [$CATALINA_USER] con 'sudo'"
+				return 1
+			fi
 		fi
+		
+		if [ $RET -ne 0 ]
+		then
+			echolog "impossibile stopppare l'istanza con l'utente [$CATALINA_USER]"
+			return 1
+		fi
+	fi
+}
+
+tomcatctl_attached_start()
+{
+	if [ -r "$CATALINA_HOME/bin/setenv.sh" ]
+	then
+		source "$CATALINA_HOME/bin/setenv.sh"
+	fi
+	
+	if ! [ -z "$CATALINA_INIT" ]
+	then
+		sudo $CATALINA_INIT start
+		return $?
+	else
+		if ! [ -z "$CATALINA_PID" ]
+		then
+			if ! [ -f "$CATALINA_PID" ]
+			then
+				sudo touch "$CATALINA_PID"
+			fi
+			sudo chown $CATALINA_USER:$CATALINA_GROUP "$CATALINA_PID"
+		fi
+		
+		sudo -u "$CATALINA_USER" bash "$CATALINA_HOME/bin/startup.sh"
+		return $?
+	fi
+}
+
+tomcatctl_attached_stop()
+{
+	if [ -r "$CATALINA_HOME/bin/setenv.sh" ]
+	then
+		source "$CATALINA_HOME/bin/setenv.sh"
+	fi
+	
+	if ! [ "$CATALINA_INIT" = "" ]
+	then
+		sudo $CATALINA_INIT stop
+		return $?
+	else
+		if ! [ -z "$CATALINA_PID" ]
+		then
+			if ! [ -f "$CATALINA_PID" ]
+			then
+				sudo touch "$CATALINA_PID"
+			fi
+			sudo chown $CATALINA_USER:$CATALINA_GROUP "$CATALINA_PID"
+		fi
+		
+		sudo -u "$CATALINA_USER" bash "$CATALINA_HOME/bin/shutdown.sh"
+		return $?
 	fi
 }
 
@@ -444,7 +565,7 @@ tomcatctl_deploy()
 }
 
 
-tomcatctl_status()
+tomcatctl_info()
 {
 	if [ -z "$1" ]
 	then
@@ -464,7 +585,7 @@ tomcatctl_status()
 	echo "istanza [$istanza] "
 	echo "template: `cat $DIR_ISTANZE/$istanza/$FILENAME_TEMPLATE`"
 	
-	tomcatctl_checkup_istanza "$istanza"
+	tomcatctl_status "$istanza"
 	RUNNING=$?
 	
 	if [ $RUNNING -ne 0 ]
@@ -478,7 +599,6 @@ tomcatctl_status()
 	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:90$istanza/$TOMCAT_MANAGER_CONTEXT/text/list"
 	$HTTP_BIN "$URL" | grep -v "^OK" | sed 's/:/ /g' | awk '{print $1}'
 }
-
 
 
 tomcatctl_create()
@@ -573,7 +693,7 @@ tomcatctl_delete()
 		return 1
 	fi
 	
-	tomcatctl_checkup_istanza "$istanza"
+	tomcatctl_status "$istanza"
 	RUNNING=$?
 	if [ $RUNNING -eq 0 ]
 	then
@@ -604,6 +724,152 @@ tomcatctl_delete()
 		fi
 	else
 		echolog "annullata eliminazione istanza [$istanza]"
+		return 1
+	fi
+}
+
+
+tomcatctl_attach()
+{
+	attach_path="$1"
+	
+	if [ -z "$attach_path" ]
+	then
+		helpmsg
+		return 1
+	fi
+	
+	if ! [ -d "$attach_path" ]
+	then
+		echolog "il path [$attach_path] non esiste"
+		return 2
+	fi
+	
+	istanza="$2"
+	tag="$3"
+	
+	if [ -z "$istanza" ]
+	then
+		istanza="00"
+		
+		while [ -d "$DIR_ISTANZE/$istanza" ]
+		do
+			istanza=`expr $istanza + 1`
+			if [ $istanza -lt 10 ]
+			then
+				istanza="0$istanza"
+			fi
+		done
+	else
+		if ! tomcatctl_codice_istanza_is_valido "$istanza"
+		then
+			echo "il codice istanza non e' un codice valido"
+			echo "il codice deve essere composto esattamente da due cifre"
+			return 3
+		fi
+		if [ -d "$DIR_ISTANZE/$istanza" ]
+		then
+			echolog "l'istanza [$istanza] e' gia' esistente, sceglierne un'altra"
+			return 4
+		fi
+	fi
+	
+	DIR_ISTANZA="$DIR_ISTANZE/$istanza"
+
+	ln -s `readlink -f "$attach_path"` "$DIR_ISTANZA"
+	if [ $? -ne 0 ]
+	then
+		echolog "impossibile creare il link simbolico [$DIR_ISTANZA] --> [$attach_path]"
+		return 1
+	fi
+	
+	# se non esiste copio il manager
+	if ! [ -d "$attach_path/webapps/manager" ]
+	then
+		cp -r "$DIR_TEMPLATES/$DEFAULT_TEMPLATE/webapps/manager" "$attach_path/webapps/"
+	fi
+	
+	if ! [ -d "$attach_path/conf/Catalina/localhost" ]
+	then
+		mkdir -p "$attach_path/conf/Catalina/localhost"
+		if [ $? -ne 0 ]
+		then
+			echolog "impossibile creare la cartella [$attach_path/conf/Catalina/localhost] per il deploy del manager"
+			return 1
+		fi
+	fi
+	
+	cp "$DIR_CONF_TEMPLATE_SKELETONS/conf/Catalina/localhost/manager.xml" "$attach_path/conf/Catalina/localhost/"
+	if [ $? -ne 0 ]
+	then
+		echolog "impossibile copiare il deployment descriptor per il manager in [$attach_path/conf/Catalina/localhost]"
+		return 1
+	fi
+	chmod +r "$attach_path/conf/Catalina/localhost/manager.xml"
+	
+	# sostituisco il file degli utenti
+	if [ -f "$attach_path/conf/tomcat-users.xml" ]
+	then
+		mv "$attach_path/conf/tomcat-users.xml" "$attach_path/conf/tomcat-users.orig.xml"
+	fi
+	
+	cp "$DIR_CONF_TEMPLATE_SKELETONS/conf/tomcat-users.xml" "$attach_path/conf/"
+	
+	chmod g+r $attach_path/conf/tomcat-users* 2> /dev/null
+	if [ $? -ne 0 ]
+	then
+		sudo chmod g+r $attach_path/conf/tomcat-users* 2> /dev/null
+		if [ $? -ne 0 ]
+		then
+			echolog "impossibile modificare i permessi di [$attach_path/conf/tomcat-users*], verificare che i files abbiano permessi di lettura per il gruppo di tomcat e amministratori"
+		fi
+	fi
+	
+	echo "$attach_path" > "$DIR_ISTANZA/$FILENAME_TEMPLATE"
+	
+	if ! [ -z "$tag" ]
+	then
+		echo "$tag" > "$DIR_ISTANZA/$FILENAME_TAG"
+	fi
+	
+	echolog "agganciato tomcat [$attach_path] all'istanza virtuale [$DIR_ISTANZA] e assegnato il tag [$tag]"
+}
+
+tomcatctl_detach()
+{
+	if [ -z "$1" ]
+	then
+		helpmsg
+		return 1
+	fi
+	
+	istanza="$1"
+	
+	DIR_ISTANZA="$DIR_ISTANZE/$istanza"
+	
+	if [ ! -d "$DIR_ISTANZA" ]
+	then
+		echolog "impossibile sganciare l'istanza [$istanza]: il path [$DIR_ISTANZA] non esiste"
+		return 1
+	fi
+	
+	echo "sganciare l'istanza virtuale [$DIR_ISTANZA]? (y/n)"	
+	read c
+	
+	if [ "$c" = "y" ]
+	then
+		# se esiste un originale ripristino il file degli utenti
+		if [ -f "$attach_path/conf/tomcat-users.orig.xml" ]
+		then
+			mv "$attach_path/conf/tomcat-users.orig.xml" "$attach_path/conf/tomcat-users.xml"
+		fi
+		
+		rm "$DIR_ISTANZA/$FILENAME_TAG"
+		rm "$DIR_ISTANZA/$FILENAME_TEMPLATE"
+		rm "$DIR_ISTANZA"
+		echolog "istanza [$istanza] sganciata"
+	else
+		echolog "annullato lo sgancio dell'istanza virtuale [$istanza]"
 		return 1
 	fi
 }
@@ -672,7 +938,12 @@ tomcatctl_clona_istanza()
 	mkdir -p "$DIR_ISTANZA/work"
 	mkdir -p "$DIR_ISTANZA/temp"
 	
-	cp -r "$DIR_ISTANZA_ORIGINALE/$FILENAME_TEMPLATE" "$DIR_ISTANZA/$FILENAME_TEMPLATE"
+	if [ -L "$DIR_ISTANZA_ORIGINALE" ]
+	then
+		echo "$DEFAULT_TEMPLATE" > "$DIR_ISTANZA/$FILENAME_TEMPLATE"
+	else
+		cp -r "$DIR_ISTANZA_ORIGINALE/$FILENAME_TEMPLATE" "$DIR_ISTANZA/$FILENAME_TEMPLATE"
+	fi
 	
 	if ! [ -z "$tag" ]
 	then
@@ -735,6 +1006,27 @@ then
 	exit $?
 fi
 
+if [ "$1" = "attach" ]
+then
+	shift
+	tomcatctl_attach $@
+	exit $?
+fi
+
+if [ "$1" = "detach" ]
+then
+	shift
+	tomcatctl_detach $@
+	exit $?
+fi
+
+if [ "$1" = "cp" ]
+then
+	shift
+	tomcatctl_clona_istanza $@
+	exit $?
+fi
+
 if [ "$1" = "ls" ]
 then
 	tomcatctl_list
@@ -775,10 +1067,21 @@ then
 	shift
 	tomcatctl_status $@
 	RET=$?
-	if [ $RET -eq 2 ]
+	if [ $RET -eq 0 ]
 	then
+		echo "up"
+	else
 		echo "down"
 	fi
+	exit $RET
+fi
+
+if [ "$1" = "info" ]
+then
+	shift
+	tomcatctl_info $@
+	tomcatctl_status $@
+	RET=$?
 	exit $RET
 fi
 
@@ -814,13 +1117,6 @@ if [ "$1" = "clean" ]
 then
 	shift
 	tomcatctl_clean $@
-	exit $?
-fi
-
-if [ "$1" = "cp" ]
-then
-	shift
-	tomcatctl_clona_istanza $@
 	exit $?
 fi
 

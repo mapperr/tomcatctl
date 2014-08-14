@@ -1,3 +1,4 @@
 #! /bin/bash
 
-`dirname $0`/bin/tomcatctl.sh $@
+DIR=`readlink -f $0`
+`dirname $DIR`/bin/tomcatctl.sh $@
