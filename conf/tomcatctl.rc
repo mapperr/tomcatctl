@@ -5,12 +5,6 @@ DATA=`date +'%Y%m%d'`
 ORA=`date +'%H%M%S'`
 TIMESTAMP="$DATA-$ORA"
 
-# questa roba va tenuta allineata con la roba nella cartella conf
-# dei vari templates (la skeleton)
-TOMCAT_MANAGER_CONTEXT="manager"
-TOMCAT_MANAGER_USERNAME="tomcat"
-TOMCAT_MANAGER_PASSWORD="tomcat"
-
 # utente con cui vengono avviati/terminati i tomcat
 CATALINA_USER="tomcat"
 
@@ -37,13 +31,19 @@ DIR_TEMPLATES="$DIR_BASE/templates"
 # conterra` le istanze di tomcat controllate da questo script
 DIR_ISTANZE="$DIR_BASE/istanze"
 
-# questo file conterrebbe le relazioni istanza <--> template
-# per ora non e` utilizzato, si fa con le cartelle nella directory delle istanze
-# FILE_ISTANZE="$DIR_CONF/istanze.txt"
-
+#files
 FILE_LOG="$DIR_LOG/$DATA.log"
 FILE_PID="$DIR_BASE/tomcatctl.pid"
 
+# manager
+TOMCAT_MANAGER_CONTEXT="tomcatctlmanager"
+TOMCAT_MANAGER_USERNAME="tomcatctl"
+TOMCAT_MANAGER_PASSWORD="tomcatctl"
+TOMCAT_MANAGER_USERS_LINE="<user username=\"$TOMCAT_MANAGER_USERNAME\" password=\"$TOMCAT_MANAGER_PASSWORD\" roles=\"manager-script\"/>"
+DIR_TOMCAT_MANAGER_RUNTIME="$DIR_CONF_TEMPLATE_SKELETONS/webapps/$TOMCAT_MANAGER_CONTEXT"
+TOMCAT_MANAGER_CONTEXT_PLACEHOLDER="tomcatctl_manager_docbase_placeholder"
+
+# filenames
 FILENAME_TEMPLATE="TEMPLATE"
 FILENAME_TAG="TAG"
 

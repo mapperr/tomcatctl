@@ -40,6 +40,14 @@ helpmsg()
 	echo ""
 	echo "comandi:"
 	echo ""
+	echo "- install <path_catalina_home> <nome_template>"
+	echo ""
+	echo "		installa un nuovo template prendendo come base <path_catalina_home>"
+	echo ""
+	echo "- uninstall <nome_template>"
+	echo ""
+	echo "		elimina il template <nome_template>"
+	echo ""
 	echo "- add [template] [codice_istanza] [tag_istanza]"
 	echo ""
 	echo "		crea un'istanza di tomcat dal template [template] (o da quello di default se omesso)"
@@ -115,6 +123,23 @@ tomcatctl_codice_istanza_is_valido()
 	return 1
 }
 
+tomcatctl_get_attached_httpport()
+{
+	if [ -z "$1" ]
+	then
+		return 1
+	fi
+	
+	if tomcatctl_codice_istanza_is_valido "$1"
+	then
+		path_catalina_home="$DIR_ISTANZE/$1"
+	else
+		path_catalina_home="$1"
+	fi
+	
+	cat "$path_catalina_home/conf/server.xml" | grep -i "<Connector" | grep -i "protocol=[\"\']HTTP" | grep -o "port=[\"\'][0-9]*" | grep -o "[0-9]*$"  | head -n1
+}
+
 tomcatctl_get_template()
 {
 	if [ -z "$1" ]
@@ -184,7 +209,7 @@ tomcatctl_list()
 		then
 			if [ -L "$DIR_ISTANZE/$directory" ]
 			then
-				template="-->`readlink $DIR_ISTANZE/$directory`"
+				template="-->`readlink $DIR_ISTANZE/$directory`:`tomcatctl_get_attached_httpport $directory`"
 			else
 				template=`tomcatctl_get_template $directory`
 				if [ $? -ne 0 ]
@@ -251,21 +276,21 @@ tomcatctl_start()
 		then
 			return 0
 		fi
+	else
+		if ! [ -z "$CATALINA_USER" ]
+		then
+			if ! grep "^$CATALINA_USER" "/etc/passwd" > /dev/null
+			then
+				echolog "l'utente [$CATALINA_USER] non esiste, impossibile avviare il tomcat"
+				return 1
+			fi
+		fi
 	fi
 	
 	if [ -z "$CATALINA_USER" ] || [ "$CATALINA_USER" = "`whoami`" ]
 	then
 		$CATALINA_HOME/bin/startup.sh
 	else
-		echolog "avvio istanza con l'utente [$CATALINA_USER]"
-		
-		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" sudo -u "$CATALINA_USER" bash "$CATALINA_HOME/bin/startup.sh" 2> /dev/null
-		RET=$?
-		if [ $RET -eq 0 ]
-		then
-			return 0
-		fi
-		
 		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
 		RET=$?
 		
@@ -274,21 +299,18 @@ tomcatctl_start()
 		# https://www.gnu.org/software/coreutils/manual/html_node/su-invocation.html
 		if [ $RET -eq 126 ]
 		then
-			echolog "permessi insufficienti per l'utilizzo di 'su', tentativo di bypass con 'sudo'"
-			sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
-			RET2=$?
-			
-			if [ $RET2 -ne 0 ]
+			CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" sudo -u "$CATALINA_USER" bash "$CATALINA_HOME/bin/startup.sh" 2> /dev/null
+			RET=$?
+			if [ $RET -ne 0 ]
 			then
-				echolog "impossibile avviare l'istanza con l'utente [$CATALINA_USER] con 'sudo'"
-				return 1
+				sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
+				RET=$?
+				if [ $RET -ne 0 ]
+				then
+					echolog "impossibile avviare il tomcat"
+					return 1
+				fi
 			fi
-		fi
-		
-		if [ $RET -ne 0 ]
-		then
-			echolog "impossibile avviare l'istanza con l'utente [$CATALINA_USER]"
-			return 1
 		fi
 	fi
 }
@@ -331,21 +353,21 @@ tomcatctl_stop()
 		then
 			return 0
 		fi
+	else
+		if ! [ -z "$CATALINA_USER" ]
+		then
+			if ! grep "^$CATALINA_USER" "/etc/passwd" > /dev/null
+			then
+				echolog "l'utente [$CATALINA_USER] non esiste, impossibile arrestare il tomcat"
+				return 1
+			fi
+		fi
 	fi
 	
 	if [ -z "$CATALINA_USER" ] || [ "$CATALINA_USER" = "`whoami`" ]
 	then
 		$CATALINA_HOME/bin/shutdown.sh
 	else
-		echolog "stop istanza con l'utente [$CATALINA_USER]"
-		
-		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" sudo -u "$CATALINA_USER" bash "$CATALINA_HOME/bin/shutdown.sh" 2> /dev/null
-		RET=$?
-		if [ $RET -eq 0 ]
-		then
-			return 0
-		fi
-		
 		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2> /dev/null
 		RET=$?
 		
@@ -354,21 +376,18 @@ tomcatctl_stop()
 		# https://www.gnu.org/software/coreutils/manual/html_node/su-invocation.html
 		if [ $RET -eq 126 ]
 		then
-			echolog "permessi insufficienti per l'utilizzo di 'su', tentativo di bypass con 'sudo'"
-			sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2> /dev/null
-			RET2=$?
-			
-			if [ $RET2 -ne 0 ]
+			CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" sudo -u "$CATALINA_USER" bash "$CATALINA_HOME/bin/shutdown.sh" 2> /dev/null
+			RET=$?
+			if [ $RET -ne 0 ]
 			then
-				echolog "impossibile stopppare l'istanza con l'utente [$CATALINA_USER] con 'sudo'"
-				return 1
+				sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2> /dev/null
+				RET=$?
+				if [ $RET -ne 0 ]
+				then
+					echolog "impossibile arrestare il tomcat"
+					return 1
+				fi
 			fi
-		fi
-		
-		if [ $RET -ne 0 ]
-		then
-			echolog "impossibile stopppare l'istanza con l'utente [$CATALINA_USER]"
-			return 1
 		fi
 	fi
 }
@@ -391,11 +410,30 @@ tomcatctl_attached_start()
 			then
 				sudo touch "$CATALINA_PID"
 			fi
-			sudo chown $CATALINA_USER:$CATALINA_GROUP "$CATALINA_PID"
+			GROUPFRAGMENT=""
+			if ! [ -z "$CATALINA_GROUP" ]
+			then
+				GROUPFRAGMENT=":$CATALINA_GROUP"
+			fi
+			sudo chown $CATALINA_USER$GROUPFRAGMENT "$CATALINA_PID"
 		fi
 		
-		sudo -u "$CATALINA_USER" bash "$CATALINA_HOME/bin/startup.sh"
-		return $?
+		su -s /bin/sh -c "$CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
+		RET=$?
+		
+		# se non si hanno i permessi per utilizzare "su" il comando ritorna 126:
+		# "126 if subshell is found but cannot be invoked"
+		# https://www.gnu.org/software/coreutils/manual/html_node/su-invocation.html
+		if [ $RET -eq 126 ]
+		then
+			if hash sudo
+			then
+				sudo -u "$CATALINA_USER" bash "$CATALINA_HOME/bin/startup.sh" 2> /dev/null
+				RET=$?
+			fi
+		fi
+		
+		return $RET
 	fi
 }
 
@@ -420,8 +458,22 @@ tomcatctl_attached_stop()
 			sudo chown $CATALINA_USER:$CATALINA_GROUP "$CATALINA_PID"
 		fi
 		
-		sudo -u "$CATALINA_USER" bash "$CATALINA_HOME/bin/shutdown.sh"
-		return $?
+		su -s /bin/sh -c "$CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2> /dev/null
+		RET=$?
+		
+		# se non si hanno i permessi per utilizzare "su" il comando ritorna 126:
+		# "126 if subshell is found but cannot be invoked"
+		# https://www.gnu.org/software/coreutils/manual/html_node/su-invocation.html
+		if [ $RET -eq 126 ]
+		then
+			if hash sudo
+			then
+				sudo -u "$CATALINA_USER" bash "$CATALINA_HOME/bin/shutdown.sh" 2> /dev/null
+				RET=$?
+			fi
+		fi
+		
+		return $RET
 	fi
 }
 
@@ -470,8 +522,14 @@ tomcatctl_listapps()
 		return 1
 	fi
 	
-	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:90$istanza/$TOMCAT_MANAGER_CONTEXT/text/list"
-	$HTTP_BIN "$URL" | grep -v "^OK" | sed 's/:/  /g' | sed 's/ [A-Za-z0-9]*##//g'
+	HTTP_PORT="90$istanza"
+	if [ -L "$DIR_ISTANZA" ]
+	then
+		HTTP_PORT=`tomcatctl_get_attached_httpport "$istanza"`
+	fi
+	
+	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:$HTTP_PORT/$TOMCAT_MANAGER_CONTEXT/text/list"
+	$HTTP_BIN "$URL" | grep -v "^OK"  | grep -v ^/$TOMCAT_MANAGER_CONTEXT | sed 's/:/  /g' | sed 's/ [A-Za-z0-9]*##//g'
 }
 
 
@@ -506,7 +564,13 @@ tomcatctl_undeploy()
 		return 4
 	fi
 	
-	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:90$istanza/$TOMCAT_MANAGER_CONTEXT/text/undeploy?path=$context&version=$versione"
+	HTTP_PORT="90$istanza"
+	if [ -L "$DIR_ISTANZA" ]
+	then
+		HTTP_PORT=`tomcatctl_get_attached_httpport "$istanza"`
+	fi
+	
+	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:$HTTP_PORT/$TOMCAT_MANAGER_CONTEXT/text/undeploy?path=$context&version=$versione"
 	$HTTP_BIN "$URL"
 }
 
@@ -549,7 +613,13 @@ tomcatctl_deploy()
 		path_war=`cygpath -m "$path_war"`
 	fi
 	
-	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:90$istanza/$TOMCAT_MANAGER_CONTEXT/text/deploy?war=file:/$path_war&update=true"
+	HTTP_PORT="90$istanza"
+	if [ -L "$DIR_ISTANZA" ]
+	then
+		HTTP_PORT=`tomcatctl_get_attached_httpport "$istanza"`
+	fi
+	
+	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:$HTTP_PORT/$TOMCAT_MANAGER_CONTEXT/text/deploy?war=file:/$path_war&update=true"
 	
 	if ! [ -z "$context" ]
 	then
@@ -594,10 +664,16 @@ tomcatctl_info()
 		return 1
 	fi
 	
+	HTTP_PORT="90$istanza"
+	if [ -L "$DIR_ISTANZA" ]
+	then
+		HTTP_PORT=`tomcatctl_get_attached_httpport "$istanza"`
+	fi
+	
 	echo ""
 	echo "apps:"
-	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:90$istanza/$TOMCAT_MANAGER_CONTEXT/text/list"
-	$HTTP_BIN "$URL" | grep -v "^OK" | sed 's/:/ /g' | awk '{print $1}'
+	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:$HTTP_PORT/$TOMCAT_MANAGER_CONTEXT/text/list"
+	$HTTP_BIN "$URL" | grep -v "^OK" | grep -v ^/$TOMCAT_MANAGER_CONTEXT | sed 's/:/ /g' | awk '{print $1}'
 }
 
 
@@ -658,12 +734,20 @@ tomcatctl_create()
 	mkdir -p "$DIR_ISTANZA/bin"
 	#cp $DIR_TEMPLATE/bin/setenv.* "$DIR_ISTANZA/bin/"
 	cp -r "$DIR_TEMPLATE/conf" "$DIR_ISTANZA/"
+	sed -i "/<\/tomcat-users>/ i $TOMCAT_MANAGER_USERS_LINE" "$DIR_ISTANZA/conf/tomcat-users.xml"
 	mkdir -p "$DIR_ISTANZA/lib"
 	mkdir -p "$DIR_ISTANZA/logs"
 	mkdir -p "$DIR_ISTANZA/webapps"
 	#cp -r "$DIR_TEMPLATE/webapps" "$DIR_ISTANZA/"
 	mkdir -p "$DIR_ISTANZA/work"
 	mkdir -p "$DIR_ISTANZA/temp"
+	
+	# modifico il deployment descriptor del tomcatctlmanager in modo che punti a [$DIR_TOMCAT_MANAGER_RUNTIME]
+	if [ "$OS" = "cygwin" ]
+	then
+		DIR_TOMCAT_MANAGER_RUNTIME=`cygpath -m "$DIR_TOMCAT_MANAGER_RUNTIME"`
+	fi
+	sed -i "s#$TOMCAT_MANAGER_CONTEXT_PLACEHOLDER#$DIR_TOMCAT_MANAGER_RUNTIME#g" "$DIR_ISTANZA/conf/Catalina/localhost/$TOMCAT_MANAGER_CONTEXT.xml"
 	
 	echo "$template" > "$DIR_ISTANZA/$FILENAME_TEMPLATE"
 	
@@ -672,7 +756,7 @@ tomcatctl_create()
 		echo "$tag" > "$DIR_ISTANZA/$FILENAME_TAG"
 	fi
 	
-	echolog "creata istanza [$istanza] con template [$template] in [$DIR_ISTANZA]"
+	echolog "creata istanza [$istanza] con template [$template] in [$DIR_ISTANZA] e assegnato il tag [$tag]"
 }
 
 tomcatctl_delete()
@@ -691,6 +775,12 @@ tomcatctl_delete()
 	then
 		echolog "impossibile eliminare l'istanza [$istanza]: il path [$DIR_ISTANZA] non esiste"
 		return 1
+	fi
+	
+	if [ -L "$DIR_ISTANZA" ]
+	then
+		echolog "impossibile eliminare l'istanza [$istanza]: l'istanza e' virtuale"
+		return 2
 	fi
 	
 	tomcatctl_status "$istanza"
@@ -750,7 +840,17 @@ tomcatctl_attach()
 	
 	if [ -z "$istanza" ]
 	then
+		HTTP_PORT=`tomcatctl_get_attached_httpport "$attach_path"`
+		ISTANZA_SUGGERITA=`echo "$HTTP_PORT" | grep -o "[0-9][0-9]$"`
+		
 		istanza="00"
+		if ! [ -d "$DIR_ISTANZE/$ISTANZA_SUGGERITA" ]
+		then
+			if tomcatctl_codice_istanza_is_valido "$ISTANZA_SUGGERITA"
+			then
+				istanza="$ISTANZA_SUGGERITA"
+			fi
+		fi
 		
 		while [ -d "$DIR_ISTANZE/$istanza" ]
 		do
@@ -782,38 +882,47 @@ tomcatctl_attach()
 		echolog "impossibile creare il link simbolico [$DIR_ISTANZA] --> [$attach_path]"
 		return 1
 	fi
+		
+	# copio il deployment descriptor del manager per abilitare solo le richieste in localhost
+	FILE_DD_MANAGER_SKELETON="$DIR_CONF_TEMPLATE_SKELETONS/conf/Catalina/localhost/$TOMCAT_MANAGER_CONTEXT.xml"
+	DIR_DD_MANAGER_ATTACHED="$attach_path/conf/Catalina/localhost/"
+	FILE_DD_MANAGER_ATTACHED="$DIR_DD_MANAGER_ATTACHED/$TOMCAT_MANAGER_CONTEXT.xml"
 	
-	# se non esiste copio il manager
-	if ! [ -d "$attach_path/webapps/manager" ]
+	if ! [ -d "$DIR_DD_MANAGER_ATTACHED" ]
 	then
-		cp -r "$DIR_TEMPLATES/$DEFAULT_TEMPLATE/webapps/manager" "$attach_path/webapps/"
-	fi
-	
-	if ! [ -d "$attach_path/conf/Catalina/localhost" ]
-	then
-		mkdir -p "$attach_path/conf/Catalina/localhost"
+		mkdir -p "$DIR_DD_MANAGER_ATTACHED"
 		if [ $? -ne 0 ]
 		then
-			echolog "impossibile creare la cartella [$attach_path/conf/Catalina/localhost] per il deploy del manager"
+			echolog "impossibile creare la cartella [$DIR_DD_MANAGER_ATTACHED] per il deploy del manager"
 			return 1
 		fi
 	fi
-	
-	cp "$DIR_CONF_TEMPLATE_SKELETONS/conf/Catalina/localhost/manager.xml" "$attach_path/conf/Catalina/localhost/"
+	cp "$FILE_DD_MANAGER_SKELETON" "$FILE_DD_MANAGER_ATTACHED"
 	if [ $? -ne 0 ]
 	then
-		echolog "impossibile copiare il deployment descriptor per il manager in [$attach_path/conf/Catalina/localhost]"
+		echolog "impossibile copiare il deployment descriptor per il manager in [$DIR_DD_MANAGER_ATTACHED]"
 		return 1
 	fi
-	chmod +r "$attach_path/conf/Catalina/localhost/manager.xml"
+	chmod +r "$FILE_DD_MANAGER_ATTACHED"
 	
-	# sostituisco il file degli utenti
-	if [ -f "$attach_path/conf/tomcat-users.xml" ]
+	# modifico il deployment descriptor del tomcatctlmanager in modo che punti a [$DIR_TOMCAT_MANAGER_RUNTIME]
+	if [ "$OS" = "cygwin" ]
 	then
-		mv "$attach_path/conf/tomcat-users.xml" "$attach_path/conf/tomcat-users.orig.xml"
+		DIR_TOMCAT_MANAGER_RUNTIME=`cygpath -m "$DIR_TOMCAT_MANAGER_RUNTIME"`
 	fi
+	sed -i "s#$TOMCAT_MANAGER_CONTEXT_PLACEHOLDER#$DIR_TOMCAT_MANAGER_RUNTIME#g" "$DIR_ISTANZA/conf/Catalina/localhost/$TOMCAT_MANAGER_CONTEXT.xml"
 	
-	cp "$DIR_CONF_TEMPLATE_SKELETONS/conf/tomcat-users.xml" "$attach_path/conf/"
+	# copio il file degli utenti se non esiste, lo backuppo
+	# e poi aggiungo le credenziali per tomcatctl
+	FILE_TUSERS_SKELETON="$DIR_CONF_TEMPLATE_SKELETONS/conf/tomcat-users.xml"
+	FILE_TUSERS_ATTACHED="$attach_path/conf/tomcat-users.xml"
+	if ! [ -f "$FILE_TUSERS_ATTACHED" ]
+	then
+		mv "$FILE_TUSERS_SKELETON" "$FILE_TUSERS_ATTACHED"
+	else
+		cp "$FILE_TUSERS_ATTACHED" "$FILE_TUSERS_ATTACHED~"
+	fi
+	sed -i "/<\/tomcat-users>/ i $TOMCAT_MANAGER_USERS_LINE" "$FILE_TUSERS_ATTACHED"
 	
 	chmod g+r $attach_path/conf/tomcat-users* 2> /dev/null
 	if [ $? -ne 0 ]
@@ -825,6 +934,7 @@ tomcatctl_attach()
 		fi
 	fi
 	
+	# set di template e tag
 	echo "$attach_path" > "$DIR_ISTANZA/$FILENAME_TEMPLATE"
 	
 	if ! [ -z "$tag" ]
@@ -853,19 +963,30 @@ tomcatctl_detach()
 		return 1
 	fi
 	
+	if [ ! -L "$DIR_ISTANZA" ]
+	then
+		echolog "l'istanza non e' virtuale, non puo' essere sganciata"
+		return 2
+	fi
+	
 	echo "sganciare l'istanza virtuale [$DIR_ISTANZA]? (y/n)"	
 	read c
 	
 	if [ "$c" = "y" ]
 	then
-		# se esiste un originale ripristino il file degli utenti
-		if [ -f "$attach_path/conf/tomcat-users.orig.xml" ]
+		echolog "rimuovo il deployment descriptor del manager"
+		FILE_DD_MANAGER_ATTACHED="$DIR_ISTANZA/conf/Catalina/localhost/$TOMCAT_MANAGER_CONTEXT.xml"
+		if [ -f "$FILE_DD_MANAGER_ATTACHED" ]
 		then
-			mv "$attach_path/conf/tomcat-users.orig.xml" "$attach_path/conf/tomcat-users.xml"
+			rm -f "$FILE_DD_MANAGER_ATTACHED"
 		fi
 		
-		rm "$DIR_ISTANZA/$FILENAME_TAG"
-		rm "$DIR_ISTANZA/$FILENAME_TEMPLATE"
+		echolog "rimuovo le credenziali per il manager di tomcatctl"
+		FILE_TUSERS_ATTACHED="$DIR_ISTANZA/conf/tomcat-users.xml"
+		sed -i "s#$TOMCAT_MANAGER_USERS_LINE##g" "$FILE_TUSERS_ATTACHED"
+		
+		if [ -f "$DIR_ISTANZA/$FILENAME_TAG" ]; then rm -f "$DIR_ISTANZA/$FILENAME_TAG"; fi
+		if [ -f "$DIR_ISTANZA/$FILENAME_TEMPLATE" ]; then rm -f "$DIR_ISTANZA/$FILENAME_TEMPLATE"; fi
 		rm "$DIR_ISTANZA"
 		echolog "istanza [$istanza] sganciata"
 	else
@@ -988,9 +1109,89 @@ tomcatctl_clean()
 	fi
 }
 
+tomcatctl_install_template()
+{
+	if [ -z "$1" ]
+	then
+		helpmsg
+		return 1
+	fi
+	
+	if [ -z "$2" ]
+	then
+		helpmsg
+		return 1
+	fi
+	
+	template_path="$1"
+	template_name="$2"
+	
+	if ! [ -d "$template_path" ]
+	then
+		echolog "il path [$template_path] non esiste"
+		return 1
+	fi
+
+	if [ -d "$DIR_TEMPLATES/$template_name" ]
+	then
+		echolog "il template [$template_name] esiste gia'"
+		return 1
+	fi
+	
+	cp -r "$template_path" "$DIR_TEMPLATES/$template_name"
+	cp -r $DIR_CONF_TEMPLATE_SKELETONS/* "$DIR_TEMPLATES/$template_name/"
+	
+	echolog "template [$template_name] installato"
+}
+
+tomcatctl_uninstall_template()
+{
+	if [ -z "$1" ]
+	then
+		helpmsg
+		return 1
+	fi
+	
+	template_name="$1"
+
+	if ! [ -d "$DIR_TEMPLATES/$template_name" ]
+	then
+		echolog "il template [$template_name] non esiste"
+		return 1
+	fi
+	
+	echo "disinstallare il template [$template_name]? (y/n)"	
+	read c
+
+	if [ "$c" = "y" ]
+	then
+		rm -rf "$DIR_TEMPLATES/$template_name/"
+	else
+		echolog "operazione annullata"
+		return 1
+	fi
+	
+	echolog "template [$template_name] disinstallato"
+}
+
 # ---------------------------------------------------------
 # esecuzione
 # ---------------------------------------------------------
+
+
+if [ "$1" = "install" ]
+then
+	shift
+	tomcatctl_install_template $@
+	exit $?
+fi
+
+if [ "$1" = "uninstall" ]
+then
+	shift
+	tomcatctl_uninstall_template $@
+	exit $?
+fi
 
 if [ "$1" = "add" ]
 then
