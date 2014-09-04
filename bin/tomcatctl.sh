@@ -677,7 +677,7 @@ tomcatctl_info()
 	echo ""
 	echo "apps:"
 	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:$HTTP_PORT/$TOMCAT_MANAGER_CONTEXT/text/list"
-	$HTTP_BIN "$URL" | grep -v "^OK" | grep -v ^/$TOMCAT_MANAGER_CONTEXT | sed 's/:/ /g' | awk '{print $1}'
+	$HTTP_BIN "$URL" | grep -v "^OK" | grep -v ^/$TOMCAT_MANAGER_CONTEXT | sed 's/:/ /g'
 }
 
 
