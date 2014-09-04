@@ -78,7 +78,11 @@ helpmsg()
 	echo ""
 	echo "- apps <codice_istanza>"
 	echo ""
-	echo "		lista delle applicazioni deployate e relativo status"
+	echo "		lista delle applicazioni deployate con relativo status, context path e versione"
+	echo ""
+	echo "- appstart | appstop | apprestart <codice_istanza> <context_applicazione> <versione_applicazione>"
+	echo ""
+	echo "		controllo dell'applicazione"
 	echo ""
 	echo "- start | stop | restart <codice_istanza>"
 	echo ""
@@ -1109,6 +1113,88 @@ tomcatctl_clean()
 	fi
 }
 
+
+# args:
+# - istanza
+# - context applicazione
+# - revision applicazione
+tomcatctl_appstart()
+{
+	if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]
+	then
+		helpmsg
+		return 1
+	fi
+	
+	istanza="$1"
+	context="$2"
+	revision="$3"
+	
+	DIR_ISTANZA="$DIR_ISTANZE/$istanza"
+	if ! [ -d "$DIR_ISTANZA" ]
+	then
+		echolog "istanza [$istanza] inesistente"
+		return 1
+	fi
+	
+	if ! tomcatctl_status "$istanza"
+	then
+		echolog "istanza non disponibile"
+		return 1
+	fi
+	
+	HTTP_PORT="90$istanza"
+	if [ -L "$DIR_ISTANZA" ]
+	then
+		HTTP_PORT=`tomcatctl_get_attached_httpport "$istanza"`
+	fi
+	
+	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:$HTTP_PORT/$TOMCAT_MANAGER_CONTEXT/text/start?path=$context&version=$revision"
+	
+	$HTTP_BIN "$URL"
+}
+
+# args:
+# - istanza
+# - context applicazione
+# - revision applicazione
+tomcatctl_appstop()
+{
+	if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]
+	then
+		helpmsg
+		return 1
+	fi
+	
+	istanza="$1"
+	context="$2"
+	revision="$3"
+	
+	DIR_ISTANZA="$DIR_ISTANZE/$istanza"
+	if ! [ -d "$DIR_ISTANZA" ]
+	then
+		echolog "istanza [$istanza] inesistente"
+		return 1
+	fi
+	
+	if ! tomcatctl_status "$istanza"
+	then
+		echolog "istanza non disponibile"
+		return 1
+	fi
+	
+	HTTP_PORT="90$istanza"
+	if [ -L "$DIR_ISTANZA" ]
+	then
+		HTTP_PORT=`tomcatctl_get_attached_httpport "$istanza"`
+	fi
+	
+	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:$HTTP_PORT/$TOMCAT_MANAGER_CONTEXT/text/stop?path=$context&version=$revision"
+	
+	$HTTP_BIN "$URL"
+}
+
+
 tomcatctl_install_template()
 {
 	if [ -z "$1" ]
@@ -1312,6 +1398,39 @@ then
 	shift
 	tomcatctl_listapps $@
 	exit $?
+fi
+
+if [ "$1" = "appstart" ]
+then
+	shift
+	tomcatctl_appstart $@
+	exit $?
+fi
+
+if [ "$1" = "appstop" ]
+then
+	shift
+	tomcatctl_appstop $@
+	exit $?
+fi
+
+if [ "$1" = "apprestart" ]
+then
+	shift
+	tomcatctl_appstop $@
+	RET=$?
+	if [ $RET -ne 0 ]
+	then
+		echolog "arresto applicazione fallito"
+		exit $RET
+	fi
+	tomcatctl_appstart $@
+	if [ $RET -ne 0 ]
+	then
+		echolog "avvio applicazione fallito"
+		exit $RET
+	fi
+	exit $RET
 fi
 
 if [ "$1" = "clean" ]
