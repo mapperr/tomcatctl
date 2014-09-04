@@ -29,7 +29,6 @@ do
 done
 
 
-
 # ---------------------------------------------------------
 # funzioni
 # ---------------------------------------------------------
@@ -41,73 +40,52 @@ helpmsg()
 	echo "comandi:"
 	echo ""
 	echo "- install <path_catalina_home> <nome_template>"
-	echo ""
-	echo "		installa un nuovo template prendendo come base <path_catalina_home>"
+	echo "	installa un nuovo template prendendo come base <path_catalina_home>"
 	echo ""
 	echo "- uninstall <nome_template>"
-	echo ""
-	echo "		elimina il template <nome_template>"
+	echo "	elimina il template <nome_template>"
 	echo ""
 	echo "- add [template] [codice_istanza] [tag_istanza]"
-	echo ""
-	echo "		crea un'istanza di tomcat dal template [template] (o da quello di default se omesso)"
-	echo "		e gli assegna un codice istanza non ancora utilizzato oppure [codice_istanza] se specificato"
-	echo "		inoltre gli assegna un tag se specificato"
+	echo "	crea un'istanza di tomcat dal template [template] (o da quello di default se omesso) e gli assegna un codice istanza non ancora utilizzato oppure [codice_istanza] se specificato inoltre gli assegna un tag se specificato"
 	echo ""
 	echo "- rm <codice_istanza>"
-	echo ""
-	echo "		elimina l'istanza a cui e' stato assegnato il codice <codice_istanza>"
+	echo "	elimina l'istanza a cui e' stato assegnato il codice <codice_istanza>"
 	echo ""
 	echo "- cp <codice_istanza_originale> [codice_istanza_clonata] [tag_istanza_clonata]"
-	echo ""
-	echo "		clona l'istanza specificata"
+	echo "	clona l'istanza specificata"
 	echo ""
 	echo "- attach <path_catalina_home> [codice_istanza] [tag_istanza]"
-	echo ""
-	echo "		aggancia l'istanza di tomcat <path_catalina_home>"
-	echo "		e gli assegna un codice istanza non ancora utilizzato oppure [codice_istanza] se specificato"
-	echo "		inoltre gli assegna un tag se specificato"
+	echo "	aggancia l'istanza di tomcat <path_catalina_home> e gli assegna un codice istanza non ancora utilizzato oppure [codice_istanza] se specificato inoltre gli assegna un tag se specificato"
 	echo ""
 	echo "- detach <codice_istanza>"
-	echo ""
-	echo "		sgancia l'istanza virtuale a cui e' stato assegnato il codice <codice_istanza>"
+	echo "	sgancia l'istanza virtuale a cui e' stato assegnato il codice <codice_istanza>"
 	echo ""
 	echo "- ls"
-	echo ""
-	echo "		lista dei templates e delle istanze"
+	echo "	lista dei templates e delle istanze"
 	echo ""
 	echo "- apps <codice_istanza>"
-	echo ""
-	echo "		lista delle applicazioni deployate con relativo status, context path e versione"
+	echo "	lista delle applicazioni deployate con relativo status, context path e versione"
 	echo ""
 	echo "- appstart | appstop | apprestart <codice_istanza> <context_applicazione> <versione_applicazione>"
-	echo ""
-	echo "		controllo dell'applicazione"
+	echo "	controllo dell'applicazione"
 	echo ""
 	echo "- start | stop | restart <codice_istanza>"
-	echo ""
-	echo "		controllo del tomcat"
+	echo "	controllo del tomcat"
 	echo ""
 	echo "- info <codice_istanza>"
-	echo ""
-	echo "		mostra informazioni sullo stato dell'istanza"
+	echo "	mostra informazioni sullo stato dell'istanza"
 	echo ""
 	echo "- deploy <codice_istanza> <path_war> <context_path> [version]"
-	echo ""
-	echo "		effettua il deploy del war passato come argomento con il context path specificato"
-	echo "		se il context path e' gia' utilizzato, allora viene effettuato prima l'undeploy dell'applicazione che ha quel context path"
+	echo "	effettua il deploy del war passato come argomento con il context path specificato se il context path e' gia' utilizzato, allora viene effettuato prima l'undeploy dell'applicazione che ha quel context path"
 	echo ""
 	echo "- undeploy <codice_istanza> <context_path> <version>"
-	echo ""
-	echo "		effettua l'undeploy dell'applicazione che ha il context path passato come argomento"
+	echo "	effettua l'undeploy dell'applicazione che ha il context path passato come argomento"
 	echo ""
 	echo "- log <codice_istanza>"
-	echo ""
-	echo "		mostra il catalina.out dell'istanza <codice_istanza>"
+	echo "	mostra il catalina.out dell'istanza <codice_istanza>"
 	echo ""
 	echo "- clean"
-	echo ""
-	echo "		elimina i file temporanei"
+	echo "	elimina i file temporanei"
 	echo ""
 }
 
@@ -509,7 +487,7 @@ tomcatctl_log()
 	$pager "$DIR_ISTANZA/logs/catalina.out"
 }
 
-tomcatctl_listapps()
+tomcatctl_info_apps()
 {
 	if [ -z "$1" ]
 	then
@@ -526,6 +504,12 @@ tomcatctl_listapps()
 		return 1
 	fi
 	
+	if ! tomcatctl_status "$istanza"
+	then
+		echolog "istanza non disponibile"
+		return 1
+	fi
+	
 	HTTP_PORT="90$istanza"
 	if [ -L "$DIR_ISTANZA" ]
 	then
@@ -533,7 +517,17 @@ tomcatctl_listapps()
 	fi
 	
 	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:$HTTP_PORT/$TOMCAT_MANAGER_CONTEXT/text/list"
-	$HTTP_BIN "$URL" | grep -v "^OK"  | grep -v ^/$TOMCAT_MANAGER_CONTEXT | sed 's/:/  /g' | sed 's/ [A-Za-z0-9]*##//g'
+	APPS=`$HTTP_BIN "$URL" | grep -v "^OK"  | grep -v ^/$TOMCAT_MANAGER_CONTEXT | sed 's/:/ /g'`
+	
+	while IFS= read -r line
+	do
+		context=`echo "$line" | awk '{print $1}'`
+		status=`echo "$line" | awk '{print $2}'`
+		sessions=`echo "$line" | awk '{print $3}'`
+		version=`echo "$line" | awk '{print $4}'`
+		version=`if echo "$version" | grep "##" > /dev/null; then echo "$version" | sed 's/.*##//g'; else echo "##"; fi`
+		echo "$context $version $status $sessions"
+	done <<< "$APPS"
 }
 
 
@@ -559,6 +553,12 @@ tomcatctl_undeploy()
 	if ! [ -d "$DIR_ISTANZA" ]
 	then
 		echolog "istanza [$istanza] inesistente"
+		return 1
+	fi
+	
+	if ! tomcatctl_status "$istanza"
+	then
+		echolog "istanza non disponibile"
 		return 1
 	fi
 	
@@ -596,6 +596,12 @@ tomcatctl_deploy()
 	if ! [ -d "$DIR_ISTANZA" ]
 	then
 		echolog "istanza [$istanza] inesistente"
+		return 1
+	fi
+	
+	if ! tomcatctl_status "$istanza"
+	then
+		echolog "istanza non disponibile"
 		return 1
 	fi
 	
@@ -638,6 +644,52 @@ tomcatctl_deploy()
 	$HTTP_BIN "$URL"
 }
 
+tomcatctl_info_memory()
+{
+	if [ -z "$1" ]
+	then
+		helpmsg
+		return 1
+	fi
+	
+	istanza="$1"
+	
+	DIR_ISTANZA="$DIR_ISTANZE/$istanza"
+	if ! [ -d "$DIR_ISTANZA" ]
+	then
+		echolog "istanza [$istanza] inesistente"
+		return 1
+	fi
+	
+	if ! tomcatctl_status "$istanza"
+	then
+		echolog "istanza non disponibile"
+		return 1
+	fi
+	
+	HTTP_PORT="90$istanza"
+	if [ -L "$DIR_ISTANZA" ]
+	then
+		HTTP_PORT=`tomcatctl_get_attached_httpport "$istanza"`
+	fi
+	
+	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:$HTTP_PORT/$TOMCAT_MANAGER_CONTEXT/status?XML=true"
+	
+	TCSTAT=`$HTTP_BIN "$URL"`
+	
+	MFREE=`echo "$TCSTAT" | grep -o "free='[0-9]*'" | grep -o [0-9]*`
+	MTOT=`echo "$TCSTAT" | grep -o "total='[0-9]*'" | grep -o [0-9]*`
+	MMAX=`echo "$TCSTAT" | grep -o "max='[0-9]*'" | grep -o [0-9]*`
+
+	MFREE=`expr $MFREE / 1000000`
+	MTOT=`expr $MTOT / 1000000`
+	MMAX=`expr $MMAX / 1000000`
+
+	MUSED=`expr $MTOT - $MFREE`
+	MUNUSED=`expr $MMAX - $MUSED`
+
+	echo "memory (MB): max=$MMAX used=$MUSED free=$MUNUSED"
+}
 
 tomcatctl_info()
 {
@@ -656,17 +708,15 @@ tomcatctl_info()
 		return 1
 	fi
 	
-	echo "istanza [$istanza] "
-	echo "template: `cat $DIR_ISTANZE/$istanza/$FILENAME_TEMPLATE`"
-	
-	tomcatctl_status "$istanza"
-	RUNNING=$?
-	
-	if [ $RUNNING -ne 0 ]
+	if ! tomcatctl_status "$istanza"
 	then
-		echo "server down"
+		echolog "istanza non disponibile"
 		return 1
 	fi
+	
+	echo "instance: [$istanza] "
+	echo "template: (`cat $DIR_ISTANZE/$istanza/$FILENAME_TEMPLATE`)"
+	echo "tag: {`if [ -r $DIR_ISTANZE/$istanza/$FILENAME_TAG ]; then cat $DIR_ISTANZE/$istanza/$FILENAME_TAG; fi`}"
 	
 	HTTP_PORT="90$istanza"
 	if [ -L "$DIR_ISTANZA" ]
@@ -674,10 +724,10 @@ tomcatctl_info()
 		HTTP_PORT=`tomcatctl_get_attached_httpport "$istanza"`
 	fi
 	
-	echo ""
-	echo "apps:"
-	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:$HTTP_PORT/$TOMCAT_MANAGER_CONTEXT/text/list"
-	$HTTP_BIN "$URL" | grep -v "^OK" | grep -v ^/$TOMCAT_MANAGER_CONTEXT | sed 's/:/ /g'
+	tomcatctl_info_memory "$istanza"
+	
+	echo "applications:"
+	tomcatctl_info_apps "$istanza"
 }
 
 
@@ -1117,10 +1167,9 @@ tomcatctl_clean()
 # args:
 # - istanza
 # - context applicazione
-# - revision applicazione
 tomcatctl_appstart()
 {
-	if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]
+	if [ -z "$1" ] || [ -z "$2" ]
 	then
 		helpmsg
 		return 1
@@ -1149,7 +1198,12 @@ tomcatctl_appstart()
 		HTTP_PORT=`tomcatctl_get_attached_httpport "$istanza"`
 	fi
 	
-	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:$HTTP_PORT/$TOMCAT_MANAGER_CONTEXT/text/start?path=$context&version=$revision"
+	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:$HTTP_PORT/$TOMCAT_MANAGER_CONTEXT/text/start?path=$context"
+	
+	if ! [ -z "$version" ]
+	then
+		URL="$URL&version=$version"
+	fi
 	
 	$HTTP_BIN "$URL"
 }
@@ -1157,10 +1211,9 @@ tomcatctl_appstart()
 # args:
 # - istanza
 # - context applicazione
-# - revision applicazione
 tomcatctl_appstop()
 {
-	if [ -z "$1" ] || [ -z "$2" ] || [ -z "$3" ]
+	if [ -z "$1" ] || [ -z "$2" ]
 	then
 		helpmsg
 		return 1
@@ -1189,7 +1242,12 @@ tomcatctl_appstop()
 		HTTP_PORT=`tomcatctl_get_attached_httpport "$istanza"`
 	fi
 	
-	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:$HTTP_PORT/$TOMCAT_MANAGER_CONTEXT/text/stop?path=$context&version=$revision"
+	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:$HTTP_PORT/$TOMCAT_MANAGER_CONTEXT/text/stop?path=$context"
+	
+	if ! [ -z "$version" ]
+	then
+		URL="$URL&version=$version"
+	fi
 	
 	$HTTP_BIN "$URL"
 }
@@ -1396,7 +1454,7 @@ fi
 if [ "$1" = "apps" ]
 then
 	shift
-	tomcatctl_listapps $@
+	tomcatctl_info_apps $@
 	exit $?
 fi
 

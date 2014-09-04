@@ -6,7 +6,7 @@ ORA=`date +'%H%M%S'`
 TIMESTAMP="$DATA-$ORA"
 
 # utente con cui vengono avviati/terminati i tomcat
-CATALINA_USER="tomcat"
+CATALINA_USER=""
 
 # assicurarsi che esista almeno sto template
 DEFAULT_TEMPLATE="base"
