@@ -66,7 +66,7 @@ helpmsg()
 	echo "- apps <codice_istanza>"
 	echo "	lista delle applicazioni deployate con relativo status, context path e versione"
 	echo ""
-	echo "- appstart | appstop | apprestart <codice_istanza> <context_applicazione> <versione_applicazione>"
+	echo "- appstart | appstop | apprestart | appreload <codice_istanza> <context_applicazione> <versione_applicazione>"
 	echo "	controllo dell'applicazione"
 	echo ""
 	echo "- start | stop | restart <codice_istanza>"
@@ -1252,6 +1252,48 @@ tomcatctl_appstop()
 	$HTTP_BIN "$URL"
 }
 
+tomcatctl_appreload()
+{
+	if [ -z "$1" ] || [ -z "$2" ]
+	then
+		helpmsg
+		return 1
+	fi
+	
+	istanza="$1"
+	context="$2"
+	version="$3"
+	
+	DIR_ISTANZA="$DIR_ISTANZE/$istanza"
+	if ! [ -d "$DIR_ISTANZA" ]
+	then
+		echolog "istanza [$istanza] inesistente"
+		return 1
+	fi
+	
+	if ! tomcatctl_status "$istanza"
+	then
+		echolog "istanza non disponibile"
+		return 1
+	fi
+	
+	HTTP_PORT="90$istanza"
+	if [ -L "$DIR_ISTANZA" ]
+	then
+		HTTP_PORT=`tomcatctl_get_attached_httpport "$istanza"`
+	fi
+	
+	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:$HTTP_PORT/$TOMCAT_MANAGER_CONTEXT/text/reload?path=$context"
+	
+	if ! [ -z "$version" ]
+	then
+		URL="$URL&version=$version"
+	fi
+	
+	$HTTP_BIN "$URL"
+}
+
+
 
 tomcatctl_install_template()
 {
@@ -1469,6 +1511,13 @@ if [ "$1" = "appstop" ]
 then
 	shift
 	tomcatctl_appstop $@
+	exit $?
+fi
+
+if [ "$1" = "appreload" ]
+then
+	shift
+	tomcatctl_appreload $@
 	exit $?
 fi
 
