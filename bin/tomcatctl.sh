@@ -677,9 +677,9 @@ tomcatctl_info_memory()
 	
 	TCSTAT=`$HTTP_BIN "$URL"`
 	
-	MFREE=`echo "$TCSTAT" | grep -o "free='[0-9]*'" | grep -o [0-9]*`
-	MTOT=`echo "$TCSTAT" | grep -o "total='[0-9]*'" | grep -o [0-9]*`
-	MMAX=`echo "$TCSTAT" | grep -o "max='[0-9]*'" | grep -o [0-9]*`
+	MFREE=`echo "$TCSTAT" | grep -o "free='[0-9]*'" | grep -o "[0-9]\{1,\}"`
+	MTOT=`echo "$TCSTAT" | grep -o "total='[0-9]*'" | grep -o "[0-9]\{1,\}"`
+	MMAX=`echo "$TCSTAT" | grep -o "max='[0-9]*'" | grep -o "[0-9]\{1,\}"`
 
 	MFREE=`expr $MFREE / 1000000`
 	MTOT=`expr $MTOT / 1000000`
