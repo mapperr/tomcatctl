@@ -1177,7 +1177,7 @@ tomcatctl_appstart()
 	
 	istanza="$1"
 	context="$2"
-	revision="$3"
+	version="$3"
 	
 	DIR_ISTANZA="$DIR_ISTANZE/$istanza"
 	if ! [ -d "$DIR_ISTANZA" ]
@@ -1221,7 +1221,7 @@ tomcatctl_appstop()
 	
 	istanza="$1"
 	context="$2"
-	revision="$3"
+	version="$3"
 	
 	DIR_ISTANZA="$DIR_ISTANZE/$istanza"
 	if ! [ -d "$DIR_ISTANZA" ]
