@@ -476,6 +476,8 @@ tomcatctl_log()
 		return 1
 	fi
 	
+	output_handler="$2"
+	
 	if hash less > /dev/null
 	then
 		pager="less"
@@ -484,7 +486,23 @@ tomcatctl_log()
 		pager="more"
 	fi
 	
-	$pager "$DIR_ISTANZA/logs/catalina.out"
+	if [ -z "$output_handler" ]
+	then
+		$pager "$DIR_ISTANZA/logs/catalina.out"
+		return $?
+	fi
+	
+	if [ "$output_handler" = "tail" ]
+	then
+		tail -fn40 "$DIR_ISTANZA/logs/catalina.out"
+		return $?
+	fi
+	
+	if [ "$output_handler" = "cat" ]
+	then
+		cat "$DIR_ISTANZA/logs/catalina.out"
+		return $?
+	fi
 }
 
 tomcatctl_info_apps()
