@@ -81,7 +81,7 @@ helpmsg()
 	echo "- undeploy <codice_istanza> <context_path> <version>"
 	echo "	effettua l'undeploy dell'applicazione che ha il context path passato come argomento"
 	echo ""
-	echo "- log <codice_istanza>"
+	echo "- log <codice_istanza> [tail | cat]"
 	echo "	mostra il catalina.out dell'istanza <codice_istanza>"
 	echo ""
 	echo "- clean"
