@@ -16,25 +16,34 @@ try{
 if(isset($_FILES['file']))
 {
 	$tempPos = $_FILES['file']['tmp_name'];
-	$destPos = "./".$_FILES['file']['name'];
+	$destPos = "/tmp/".$_FILES['file']['name'];
 	move_uploaded_file($tempPos, $destPos);
 	$istanza = $_POST['istanza'];
 	$command = "$tomcatctl_bin deploy $istanza $destPos";
 	if(isset($_POST['context']) && ($_POST['context'] != ""))
 	{
-		$command .= " $_POST['context']";
+		$command .= " " . $_POST['context'];
 		if(isset($_POST['version']) && ($_POST['version'] != ""))
 		{
-			$command .= " $_POST['version']";
+			$command .= " " . $_POST['version'];
 		}
 	}
 	exec("$command", $output_lines);
-	echo "<div id='msg'>";
+	echo "<div id='msg'><pre>";
 	foreach($output_lines as $outline) echo "$outline<br />";
-	echo "</div>";
+	echo "</pre></div>";
 	unlink($destPos);
 }
 
+if($_GET['cmd'] == "log")
+{
+	$istanza = $_GET['istanza'];
+	exec("$tomcatctl_bin log $istanza cat", $output_lines);
+	echo "<div id='msg'><pre>";
+	foreach($output_lines as $outline) echo "$outline<br />";
+	echo "<a name='lastlogline'></a>";
+	echo "</pre></div>";
+}
 
 // app restart
 if( $_GET['cmd'] == "restart" )
@@ -43,9 +52,9 @@ if( $_GET['cmd'] == "restart" )
 	$context = $_GET['path'];
 	$version = $_GET['version'];
 	exec("$tomcatctl_bin apprestart $istanza $context $version", $output_lines);
-	echo "<div id='msg'>";
+	echo "<div id='msg'><pre>";
 	foreach($output_lines as $outline) echo "$outline<br />";
-	echo "</div>";
+	echo "</pre></div>";
 }
 
 
@@ -56,9 +65,9 @@ if( $_GET['cmd'] == "start" )
     $context = $_GET['path'];
     $version = $_GET['version'];
 	exec("$tomcatctl_bin appstart $istanza $context $version", $output_lines);
-	echo "<div id='msg'>";
+	echo "<div id='msg'><pre>";
 	foreach($output_lines as $outline) echo "$outline<br />";
-	echo "</div>";
+	echo "</pre></div>";
 }
 
 // app stop
@@ -68,9 +77,9 @@ if( $_GET['cmd'] == "stop" )
     $context = $_GET['path'];
     $version = $_GET['version'];
 	exec("$tomcatctl_bin appstop $istanza $context $version", $output_lines);
-    echo "<div id='msg'>";
+    echo "<div id='msg'><pre>";
     foreach($output_lines as $outline) echo "$outline<br />";
-	echo "</div>";
+	echo "</pre></div>";
 }
 
 if( $_GET['cmd'] == "reload" )
@@ -79,9 +88,9 @@ if( $_GET['cmd'] == "reload" )
     $context = $_GET['path'];
     $version = $_GET['version'];
     exec("$tomcatctl_bin appreload $istanza $context $version", $output_lines);
-    echo "<div id='msg'>";
+    echo "<div id='msg'><pre>";
     foreach($output_lines as $outline) echo "$outline<br />";
-    echo "</div>";
+    echo "</pre></div>";
 }
 
 
@@ -91,9 +100,9 @@ if( $_GET['cmd'] == "undeploy" )
     $context = $_GET['path'];
     $version = $_GET['version'];
     exec("$tomcatctl_bin undeploy $istanza $context $version", $output_lines);
-    echo "<div id='msg'>";
+    echo "<div id='msg'><pre>";
     foreach($output_lines as $outline) echo "$outline<br />";
-    echo "</div>";
+	echo "</pre></div>";
 }
 
 exec("$tomcatctl_bin ls | grep -v '^#'",$list_outlines);
@@ -102,13 +111,22 @@ foreach($list_outlines as $line)
 {
 	$words = preg_split("/[\s\t]+/",trim($line));
 	$codiceIstanza = $words[0];
-	
+	$status = (strpos($words[1],"down")===FALSE)?TRUE:FALSE;
+
 	unset($apps_outlines);
-	exec("$tomcatctl_bin apps $codiceIstanza | grep -v '^#'",$apps_outlines);
 	
 	echo "<p>";
-	echo "<pre id='status_$codiceIstanza' onclick='toggle_info(\"$codiceIstanza\");' style='font-size:20px;cursor:pointer;'>$line</pre>";
+	$onclick_fragment = "";
+	$style_fragment = "";
+	if($status)
+	{
+		exec("$tomcatctl_bin apps $codiceIstanza | grep -v '^#'",$apps_outlines);
+		$onclick_fragment = "onclick='toggle_info(\"$codiceIstanza\");'";
+		$style_fragment = "font-weight:bold;cursor:pointer;";
+	}
+	echo "<pre id='status_$codiceIstanza' $onclick_fragment style='font-size:20px;$style_fragment'>$line</pre>";
 	echo "<div id='apps_$codiceIstanza' style='margin-left:100px;display:none;'>";
+	echo "<a href='?cmd=log&amp;istanza=$codiceIstanza#lastlogline'>log</a> ";
 	echo <<<TT
 		<form name="deploy" method="post" action="" enctype="multipart/form-data"> 
 		<input type="hidden" name="istanza" value="$codiceIstanza">
