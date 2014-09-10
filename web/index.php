@@ -5,6 +5,7 @@ require_once "conf.php";
 echo <<<TT
 <html>
 <head>
+<link rel='stylesheet' href='t.css' type='text/css' media='all' />
 <script src="jquery-2.1.1.min.js"></script>
 <script src="main.js"></script>
 </head>
@@ -17,6 +18,7 @@ if(isset($_FILES['file']))
 {
 	$tempPos = $_FILES['file']['tmp_name'];
 	//$destPos = $tempPos;
+	//$destPos = "/tmp/".str_replace($_FILES['file']['name'],"_","#");
 	$destPos = "/tmp/".$_FILES['file']['name'];
 	move_uploaded_file($tempPos, $destPos);
 	$istanza = $_POST['istanza'];
@@ -29,7 +31,7 @@ if(isset($_FILES['file']))
 			$command .= " " . $_POST['version'];
 		}
 	}
-	echo "<p>".$command."</p>";
+	echo "<pre>".$command."</pre>";
 	exec($command, $output_lines);
 	echo "<div id='msg'><pre>";
 	foreach($output_lines as $outline) echo "$outline<br />";
@@ -135,7 +137,7 @@ foreach($list_outlines as $line)
 			<form name="deploy" method="post" action="" enctype="multipart/form-data"> 
 			<input type="hidden" name="MAX_FILE_SIZE" value="50000000" />
 			<input type="hidden" name="istanza" value="$codiceIstanza"/>
-			war: <input type="file" name="file"/> context path: <input type="text" name="context"/> version: <input type="text" name="version"/> <input type="submit" name="submit" value="deploy"/>
+			<u>war</u>: <input type="file" name="file"/> <u>context path</u>: <input type="text" name="context"/> version: <input type="text" name="version"/> <input type="submit" name="submit" value="deploy"/>
 			</form>
 TT;
 		echo "<pre>";
@@ -146,12 +148,14 @@ TT;
 			$app_version = $apps_words[1];
 			$app_status = $apps_words[2];
 			$version_querystring = ($app_version != "##") ? "&amp;version=$app_version":"";
+			echo "<p>";
 			echo "<a href='?cmd=restart&amp;istanza=$codiceIstanza&amp;path=$app_context$version_querystring'>restart</a> ";
 			echo "<a href='?cmd=start&amp;istanza=$codiceIstanza&amp;path=$app_context$version_querystring'>start</a> ";
 			echo "<a href='?cmd=stop&amp;istanza=$codiceIstanza&amp;path=$app_context$version_querystring'>stop</a> ";
 			echo "<a href='?cmd=reload&amp;istanza=$codiceIstanza&amp;path=$app_context$version_querystring'>reload</a> ";
 			echo "<a href='?cmd=undeploy&amp;istanza=$codiceIstanza&amp;path=$app_context$version_querystring'>undeploy</a> ";
 			echo "<a href='$host:90$codiceIstanza$app_context'>$app_context</a> $app_version $app_status\n";
+			echo "</p>";
 		}
 		echo "</pre>";
 		echo "</div>";
