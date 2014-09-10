@@ -75,8 +75,8 @@ helpmsg()
 	echo "- info <codice_istanza>"
 	echo "	mostra informazioni sullo stato dell'istanza"
 	echo ""
-	echo "- deploy <codice_istanza> <path_war> <context_path> [version]"
-	echo "	effettua il deploy del war passato come argomento con il context path specificato se il context path e' gia' utilizzato, allora viene effettuato prima l'undeploy dell'applicazione che ha quel context path"
+	echo "- deploy <codice_istanza> <path_war> [context_path] [version]"
+	echo "	effettua il deploy del war passato come argomento con il context path specificato se il context path e' gia' utilizzato, allora viene effettuato prima l'undeploy dell'applicazione che ha quel context path. Note: se c'e' l'autoDeploy attivo sul tomcat, allora il context path e' obbligatorio"
 	echo ""
 	echo "- undeploy <codice_istanza> <context_path> <version>"
 	echo "	effettua l'undeploy dell'applicazione che ha il context path passato come argomento"
@@ -273,6 +273,7 @@ tomcatctl_start()
 	then
 		$CATALINA_HOME/bin/startup.sh
 	else
+		echolog "tentativo di avvio con comando su"
 		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
 		RET=$?
 		
@@ -281,10 +282,12 @@ tomcatctl_start()
 		# https://www.gnu.org/software/coreutils/manual/html_node/su-invocation.html
 		if [ $RET -eq 126 ]
 		then
+			echolog "tentativo di avvio con comando sudo -u"
 			CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" sudo -u "$CATALINA_USER" bash "$CATALINA_HOME/bin/startup.sh" 2> /dev/null
 			RET=$?
 			if [ $RET -ne 0 ]
 			then
+				echolog "tentativo di avvio con comando sudo su"
 				sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
 				RET=$?
 				if [ $RET -ne 0 ]
@@ -350,6 +353,7 @@ tomcatctl_stop()
 	then
 		$CATALINA_HOME/bin/shutdown.sh
 	else
+		echolog "tentativo di arresto con comando su"
 		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2> /dev/null
 		RET=$?
 		
@@ -358,10 +362,12 @@ tomcatctl_stop()
 		# https://www.gnu.org/software/coreutils/manual/html_node/su-invocation.html
 		if [ $RET -eq 126 ]
 		then
+			echolog "tentativo di arresto con comando sudo -u"
 			CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" sudo -u "$CATALINA_USER" bash "$CATALINA_HOME/bin/shutdown.sh" 2> /dev/null
 			RET=$?
 			if [ $RET -ne 0 ]
 			then
+				echolog "tentativo di arresto con comando sudo su"
 				sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2> /dev/null
 				RET=$?
 				if [ $RET -ne 0 ]
@@ -383,6 +389,7 @@ tomcatctl_attached_start()
 	
 	if ! [ -z "$CATALINA_INIT" ]
 	then
+		echolog "tentativo di avvio con sudo tramite script esterno: trovato CATALINA_INIT [$CATALINA_INIT]"
 		sudo $CATALINA_INIT start
 		return $?
 	else
@@ -400,6 +407,7 @@ tomcatctl_attached_start()
 			sudo chown $CATALINA_USER$GROUPFRAGMENT "$CATALINA_PID"
 		fi
 		
+		echolog "tentativo di avvio con comando su"
 		su -s /bin/sh -c "$CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
 		RET=$?
 		
@@ -410,6 +418,7 @@ tomcatctl_attached_start()
 		then
 			if hash sudo
 			then
+				echolog "tentativo di avvio con comando sudo -u"
 				sudo -u "$CATALINA_USER" bash "$CATALINA_HOME/bin/startup.sh" 2> /dev/null
 				RET=$?
 			fi
@@ -428,6 +437,7 @@ tomcatctl_attached_stop()
 	
 	if ! [ "$CATALINA_INIT" = "" ]
 	then
+		echolog "tentativo di arresto con sudo tramite script esterno: trovato CATALINA_INIT [$CATALINA_INIT]"
 		sudo $CATALINA_INIT stop
 		return $?
 	else
@@ -440,6 +450,7 @@ tomcatctl_attached_stop()
 			sudo chown $CATALINA_USER:$CATALINA_GROUP "$CATALINA_PID"
 		fi
 		
+		echolog "tentativo di arresto con comando su"
 		su -s /bin/sh -c "$CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2> /dev/null
 		RET=$?
 		
@@ -450,6 +461,7 @@ tomcatctl_attached_stop()
 		then
 			if hash sudo
 			then
+				echolog "tentativo di arresto con comando sudo -u"
 				sudo -u "$CATALINA_USER" bash "$CATALINA_HOME/bin/shutdown.sh" 2> /dev/null
 				RET=$?
 			fi
@@ -596,7 +608,8 @@ tomcatctl_undeploy()
 	$HTTP_BIN "$URL"
 }
 
-
+# se c'e` l'autoDeploy attivo sul tomcat, allora il context path e` obbligatorio
+# http://tomcat.apache.org/tomcat-7.0-doc/manager-howto.html#Deploy_A_New_Application_from_a_Local_Path
 tomcatctl_deploy()
 {
 	if [ -z "$1" ] || [ -z "$2" ]
@@ -631,7 +644,7 @@ tomcatctl_deploy()
 	
 	if [ "`echo "$context" | sed 's/\///g'`" = "$TOMCAT_MANAGER_CONTEXT" ]
 	then
-		echo "impossibile effettuare il deploy di un'applicazione con il context path del tomcat manager"
+		echolog "impossibile effettuare il deploy di un'applicazione con il context path del tomcat manager"
 		return 4
 	fi
 	
@@ -647,11 +660,13 @@ tomcatctl_deploy()
 		HTTP_PORT=`tomcatctl_get_attached_httpport "$istanza"`
 	fi
 	
-	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:$HTTP_PORT/$TOMCAT_MANAGER_CONTEXT/text/deploy?war=file:/$path_war&update=true"
+	escaped_path_war=`echo "$path_war" | sed 's@#@%23@g'`
+	
+	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:$HTTP_PORT/$TOMCAT_MANAGER_CONTEXT/text/deploy?war=file:/$escaped_path_war"
 	
 	if ! [ -z "$context" ]
 	then
-		URL="$URL&path=$context"
+		URL="$URL&update=true&path=$context"
 	fi
 	
 	if ! [ -z "$version" ]
@@ -659,6 +674,7 @@ tomcatctl_deploy()
 		URL="$URL&version=$version"
 	fi
 	
+	echolog "deploy di [$path_war] con context path [$context] alla versione [$version]"
 	$HTTP_BIN "$URL"
 }
 
