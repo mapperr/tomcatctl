@@ -29,6 +29,7 @@ DIR_TEMPLATES="$DIR_BASE/templates"
 
 # questa directory puo` essere settata dove ti pare
 # conterra` le istanze di tomcat controllate da questo script
+# settare il flag sgid: chmod g+s $DIR_ISTANZE
 DIR_ISTANZE="$DIR_BASE/istanze"
 
 #files
@@ -47,6 +48,10 @@ TOMCAT_MANAGER_CONTEXT_PLACEHOLDER="tomcatctl_manager_docbase_placeholder"
 FILENAME_TEMPLATE="TEMPLATE"
 FILENAME_TAG="TAG"
 
+
+# --------------------------------------------
+# controlli
+# --------------------------------------------
 
 # controllo che ci sia un client http valido e lo setto
 # il client http serve principalmente a comunicare col tomcat manager
@@ -84,3 +89,11 @@ echolog()
 	echo "$logmesg"
 	echo "$logmesg" >> "$FILE_LOG"
 }
+
+
+# --------------------------------------------
+# pre-esecuzione
+# --------------------------------------------
+
+# tutti i permessi settati per il gruppo
+umask 0002

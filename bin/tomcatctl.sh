@@ -283,7 +283,7 @@ tomcatctl_start()
 		if [ $RET -eq 126 ]
 		then
 			echolog "tentativo di avvio con comando sudo -u"
-			CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" sudo -u "$CATALINA_USER" bash "$CATALINA_HOME/bin/startup.sh" 2> /dev/null
+			sudo -u "$CATALINA_USER" CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" bash "$CATALINA_HOME/bin/startup.sh" 2> /dev/null
 			RET=$?
 			if [ $RET -ne 0 ]
 			then
@@ -363,7 +363,7 @@ tomcatctl_stop()
 		if [ $RET -eq 126 ]
 		then
 			echolog "tentativo di arresto con comando sudo -u"
-			CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" sudo -u "$CATALINA_USER" bash "$CATALINA_HOME/bin/shutdown.sh" 2> /dev/null
+			sudo -u "$CATALINA_USER" CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" bash "$CATALINA_HOME/bin/shutdown.sh" 2> /dev/null
 			RET=$?
 			if [ $RET -ne 0 ]
 			then
