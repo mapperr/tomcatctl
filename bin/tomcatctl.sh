@@ -820,7 +820,7 @@ tomcatctl_create()
 	fi
 	
 	mkdir -p "$DIR_ISTANZA/bin"
-	#cp $DIR_TEMPLATE/bin/setenv.* "$DIR_ISTANZA/bin/"
+	echo "source $DIR_TEMPLATE/bin/setenv.sh" > "$DIR_ISTANZA/bin/setenv.sh"
 	cp -r "$DIR_TEMPLATE/conf" "$DIR_ISTANZA/"
 	sed -i "/<\/tomcat-users>/ i $TOMCAT_MANAGER_USERS_LINE" "$DIR_ISTANZA/conf/tomcat-users.xml"
 	mkdir -p "$DIR_ISTANZA/lib"
@@ -971,7 +971,7 @@ tomcatctl_attach()
 		return 1
 	fi
 		
-	# copio il deployment descriptor del manager per abilitare solo le richieste in localhost
+	# copio il deployment descriptor del manager per abilitare solo le richieste da localhost
 	FILE_DD_MANAGER_SKELETON="$DIR_CONF_TEMPLATE_SKELETONS/conf/Catalina/localhost/$TOMCAT_MANAGER_CONTEXT.xml"
 	DIR_DD_MANAGER_ATTACHED="$attach_path/conf/Catalina/localhost/"
 	FILE_DD_MANAGER_ATTACHED="$DIR_DD_MANAGER_ATTACHED/$TOMCAT_MANAGER_CONTEXT.xml"
