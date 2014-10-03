@@ -1478,7 +1478,7 @@ then
 		echo "impossibile stoppare l'istanza [$1]"
 		exit $RET
 	fi
-	sleep 1
+	sleep 3
 	tomcatctl_start $@
 	exit $?
 fi
@@ -1565,6 +1565,7 @@ then
 		echolog "arresto applicazione fallito"
 		exit $RET
 	fi
+	sleep 2
 	tomcatctl_appstart $@
 	if [ $RET -ne 0 ]
 	then
