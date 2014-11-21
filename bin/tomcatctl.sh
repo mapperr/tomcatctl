@@ -254,10 +254,7 @@ tomcatctl_start()
 		export CATALINA_HOME="`readlink $DIR_ISTANZE/$istanza`"
 		tomcatctl_attached_start
 		RET=$?
-		if [ $RET -eq 0 ]
-		then
-			return 0
-		fi
+		return $RET
 	else
 		if ! [ -z "$CATALINA_USER" ]
 		then
@@ -334,10 +331,7 @@ tomcatctl_stop()
 		export CATALINA_HOME="`readlink $DIR_ISTANZE/$istanza`"
 		tomcatctl_attached_stop
 		RET=$?
-		if [ $RET -eq 0 ]
-		then
-			return 0
-		fi
+		return $RET
 	else
 		if ! [ -z "$CATALINA_USER" ]
 		then
