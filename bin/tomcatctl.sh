@@ -245,7 +245,8 @@ tomcatctl_start()
 	
 	template=`cat "$DIR_ISTANZA/$FILENAME_TEMPLATE"`
 	
-	export CATALINA_HOME="$DIR_TEMPLATES/$template"
+	export DIR_TEMPLATE="$DIR_TEMPLATES/$template"
+	export CATALINA_HOME="$DIR_TEMPLATE"
 	export CATALINA_BASE="$DIR_ISTANZA"
 	
 	# controllo se l'istanza e` attached
@@ -814,7 +815,7 @@ tomcatctl_create()
 	fi
 	
 	mkdir -p "$DIR_ISTANZA/bin"
-	echo "source $DIR_TEMPLATE/bin/setenv.sh" > "$DIR_ISTANZA/bin/setenv.sh"
+	echo 'source $DIR_TEMPLATE/bin/setenv.sh' > "$DIR_ISTANZA/bin/setenv.sh"
 	cp -r "$DIR_TEMPLATE/conf" "$DIR_ISTANZA/"
 	sed -i "/<\/tomcat-users>/ i $TOMCAT_MANAGER_USERS_LINE" "$DIR_ISTANZA/conf/tomcat-users.xml"
 	mkdir -p "$DIR_ISTANZA/lib"
