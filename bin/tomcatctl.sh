@@ -18,7 +18,7 @@ source "$FILE_CONFIG"
 # setup
 # ---------------------------------------------------------
 
-DIRS="$DIR_LOG"
+DIRS="$DIR_LOG $DIR_ISTANZE"
 
 for dir in $DIRS
 do
@@ -275,7 +275,7 @@ tomcatctl_start()
 		$CATALINA_HOME/bin/startup.sh
 	else
 		echolog "tentativo di avvio con comando su"
-		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
+		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" DIR_TEMPLATE="$DIR_TEMPLATES/$template" su -s /bin/sh -c "$CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
 		RET=$?
 		
 		# se non si hanno i permessi per utilizzare "su" il comando ritorna 126:
@@ -284,12 +284,12 @@ tomcatctl_start()
 		if [ $RET -eq 126 ]
 		then
 			echolog "tentativo di avvio con comando sudo -u"
-			sudo -u "$CATALINA_USER" CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" bash "$CATALINA_HOME/bin/startup.sh" 2> /dev/null
+			sudo -u "$CATALINA_USER" CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" DIR_TEMPLATE="$DIR_TEMPLATES/$template" bash "$CATALINA_HOME/bin/startup.sh" 2> /dev/null
 			RET=$?
 			if [ $RET -ne 0 ]
 			then
 				echolog "tentativo di avvio con comando sudo su"
-				sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
+				sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" DIR_TEMPLATE="$DIR_TEMPLATES/$template" su -s /bin/sh -c "$CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
 				RET=$?
 				if [ $RET -ne 0 ]
 				then
@@ -326,6 +326,7 @@ tomcatctl_stop()
 	
 	template=`cat "$DIR_ISTANZA/$FILENAME_TEMPLATE"`
 	
+	export DIR_TEMPLATE="$DIR_TEMPLATES/$template"
 	export CATALINA_HOME="$DIR_TEMPLATES/$template"
 	export CATALINA_BASE="$DIR_ISTANZA"
 	
@@ -352,7 +353,7 @@ tomcatctl_stop()
 		$CATALINA_HOME/bin/shutdown.sh
 	else
 		echolog "tentativo di arresto con comando su"
-		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2> /dev/null
+		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" DIR_TEMPLATE="$DIR_TEMPLATES/$template" su -s /bin/sh -c "$CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2> /dev/null
 		RET=$?
 		
 		# se non si hanno i permessi per utilizzare "su" il comando ritorna 126:
@@ -361,12 +362,12 @@ tomcatctl_stop()
 		if [ $RET -eq 126 ]
 		then
 			echolog "tentativo di arresto con comando sudo -u"
-			sudo -u "$CATALINA_USER" CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" bash "$CATALINA_HOME/bin/shutdown.sh" 2> /dev/null
+			sudo -u "$CATALINA_USER" CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" DIR_TEMPLATE="$DIR_TEMPLATES/$template" bash "$CATALINA_HOME/bin/shutdown.sh" 2> /dev/null
 			RET=$?
 			if [ $RET -ne 0 ]
 			then
 				echolog "tentativo di arresto con comando sudo su"
-				sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "$CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2> /dev/null
+				sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" DIR_TEMPLATE="$DIR_TEMPLATES/$template" su -s /bin/sh -c "$CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2> /dev/null
 				RET=$?
 				if [ $RET -ne 0 ]
 				then
