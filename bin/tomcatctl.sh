@@ -183,8 +183,10 @@ tomcatctl_list()
 	
 	echo "#"
 	echo "# directory istanze: [$DIR_ISTANZE]"
-	echo "# istanza  [stato]  {tag}  (template)"
+	echo "# istanza  stato  tag  template"
 	echo "#"
+	SEPARATOR="######"
+	STATUSROWS=""
 	for directory in `ls $DIR_ISTANZE | sort`
 	do
 		if tomcatctl_codice_istanza_is_valido "$directory"
@@ -215,9 +217,10 @@ tomcatctl_list()
 				tag=`cat $DIR_ISTANZE/$directory/$FILENAME_TAG`
 			fi
 			
-			echo "  $directory	[$stato]  {$tag}  ($template)"
+			STATUSROWS="$STATUSROWS$SEPARATOR$directory $stato $tag $template"
 		fi
 	done
+	echo $STATUSROWS | sed "s/$SEPARATOR/\n/g" | column -t
 }
 
 tomcatctl_start()
