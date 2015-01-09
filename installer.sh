@@ -8,6 +8,24 @@ DIR_BASE=`pwd -P`
 # setup
 # ---------------------------------------------------------
 
+URL_REPOSITORY="http://localhost/"
+
+PATH_REPO="tomcatctl"
+PATH_TEMPLATES="templates"
+PATH_JDK="jdk"
+PATH_PACKAGE="tomcatctl.zip"
+PATH_TEMPLATE_LIST="template.list"
+
+URL_PACKAGE="$URL_REPOSITORY/$PATH_REPO/$PATH_PACKAGE"
+URL_TEMPLATE_DIR="$URL_REPOSITORY/$PATH_REPO/$PATH_TEMPLATES"
+URL_TEMPLATE_LIST="$URL_TEMPLATE_DIR/$PATH_TEMPLATE_LIST"
+URL_JDK="$URL_REPOSITORY/$PATH_REPO/$PATH_JDK"
+
+
+# ---------------------------------------------------------
+# checks
+# ---------------------------------------------------------
+
 if hash wget
 then
 	BIN_HTTP="wget -q -t1 -T120 --no-proxy"
@@ -36,19 +54,6 @@ else
 	OS="altro"
 fi
 
-
-URL_REPOSITORY="http://localhost/"
-
-PATH_REPO="tomcatctl"
-PATH_TEMPLATES="templates"
-PATH_JDK="jdk"
-PATH_PACKAGE="tomcatctl.zip"
-PATH_TEMPLATE_LIST="template.list"
-
-URL_PACKAGE="$URL_REPOSITORY/$PATH_REPO/$PATH_PACKAGE"
-URL_TEMPLATE_DIR="$URL_REPOSITORY/$PATH_REPO/$PATH_TEMPLATES"
-URL_TEMPLATE_LIST="$URL_TEMPLATE_DIR/$PATH_TEMPLATE_LIST"
-URL_JDK="$URL_REPOSITORY/$PATH_REPO/$PATH_JDK"
 
 # ---------------------------------------------------------
 # funzioni
