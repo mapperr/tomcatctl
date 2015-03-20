@@ -1192,7 +1192,8 @@ tomcatctl_clean()
 			return 1
 		fi
 		
-		# boh
+		DIR_WORK="$DIR_ISTANZA/work/Catalina/localhost"
+		test -d "$DIR_WORK" && rm -rf "$DIR_WORK"
 	fi
 }
 
