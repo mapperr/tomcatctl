@@ -82,6 +82,23 @@ fi
 # --------------------------------------------
 # funzioni globali
 # --------------------------------------------
+get_timestamp()
+{
+	DATA=`date +'%Y%m%d'`
+	ORA=`date +'%H%M%S'`
+	TIMESTAMP="$DATA$ORA"
+	
+	if [ "$1" = "data" ]; then
+		echo "$DATA"
+		return 0
+	elif [ "$1" = "ora" ]; then
+		echo "$ORA"
+		return 0
+	fi
+	
+	echo "$TIMESTAMP"
+	return 0
+}
 
 echolog()
 {

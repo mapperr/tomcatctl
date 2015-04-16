@@ -84,8 +84,8 @@ helpmsg()
 	echo "- log <codice_istanza> [tail | cat]"
 	echo "	mostra il catalina.out dell'istanza <codice_istanza>"
 	echo ""
-	echo "- clean"
-	echo "	elimina i file temporanei"
+	echo "- clean [istanza [logs]]"
+	echo "	elimina i file temporanei di tomcatctl, oppure di un'istanza di tomcat. Con [logs] vengono eliminati anche i files di log"
 	echo ""
 }
 
@@ -1186,14 +1186,35 @@ tomcatctl_clean()
 		istanza="$1"
 		DIR_ISTANZA="$DIR_ISTANZE/$istanza"
 	
-		if [ ! -d "$DIR_ISTANZA" ]
-		then
+		if [ ! -d "$DIR_ISTANZA" ]; then
+		
 			echolog "impossibile ripulire l'istanza [$istanza]: il path [$DIR_ISTANZA] non esiste"
 			return 1
 		fi
 		
-		DIR_WORK="$DIR_ISTANZA/work/Catalina/localhost"
-		test -d "$DIR_WORK" && rm -rf "$DIR_WORK"
+		echolog "clean dell'istanza [$istanza]"
+		DIR_TOMCAT_WORK="$DIR_ISTANZA/work/Catalina/localhost"
+		test -d "$DIR_TOMCAT_WORK" && rm -rf "$DIR_TOMCAT_WORK"
+		
+		subarea="$2"
+		if [ "$subarea" = "logs" ]; then
+		
+			DIR_TOMCAT_LOGS="$DIR_ISTANZA/logs"
+			
+			if [ ! -d "$DIR_TOMCAT_LOGS" ]; then
+			
+				echolog "impossibile ripulire i logs dell'istanza [$istanza]: il path [$DIR_TOMCAT_LOGS] non esiste"
+				return 1
+			fi
+			
+			echolog "backup e clean dei logs dell'istanza [$istanza]"
+			FILE_LOGS_TARGZ="$DIR_TOMCAT_LOGS/tomcat.$istanza.logs.`get_timestamp`.tar.gz"
+			DIR_CURRENT=`pwd -P`
+			cd $DIR_TOMCAT_LOGS
+			tar czf $FILE_LOGS_TARGZ ./*.log
+			cd $DIR_CURRENT
+			rm -f $DIR_TOMCAT_LOGS/*.log
+		fi
 	fi
 }
 
