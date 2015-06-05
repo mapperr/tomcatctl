@@ -9,10 +9,10 @@ CATALINA_PID="$CATALINA_BASE/catalina.pid"
 # opzioni java virtual machine
 INSTANCE_OPTS="-Dcodice.tomcat=$CODICE_TOMCAT"
 VM_OPTS="-server"
-MEMORY_OPTS="-Xms64m -Xmx512m"
-GARBAGE_OPTS="-XX:+UseG1GC"
-JMX_AUTH_OPTS="-Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false"
-JMX_OPTS="-Dcom.sun.management.jmxremote.port=100$CODICE_TOMCAT"
+MEMORY_OPTS="-Xms128m -Xmx256m"
+#GARBAGE_OPTS="-XX:+UseG1GC"
+#JMX_AUTH_OPTS="-Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false"
+#JMX_OPTS="-Dcom.sun.management.jmxremote.port=100$CODICE_TOMCAT"
 
 CATALINA_OPTS="$INSTANCE_OPTS $VM_OPTS $MEMORY_OPTS $GARBAGE_OPTS $JMX_OPTS $JMX_AUTH_OPTS"
 
