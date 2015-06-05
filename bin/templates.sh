@@ -6,7 +6,12 @@
 
 tomcatctl_list_templates()
 {
-  $HTTP_BIN "$URL_TEMPLATE_REPO/list.txt"
+  echo "templates installed:"
+  for template in `ls $DIR_TEMPLATES`; do
+    echo "$template"
+  done
+  echo "templates available:"
+  $HTTP_BIN "$URL_TEMPLATE_REPO/templates.list"
 }
 
 tomcatctl_install_template()
@@ -17,31 +22,14 @@ tomcatctl_install_template()
 		return 1
 	fi
 	
-	if [ -z "$2" ]
-	then
-		helpmsg
-		return 1
-	fi
+	template_name="$1"
 	
-	template_path="$1"
-	template_name="$2"
-	
-	if ! [ -d "$template_path" ]
-	then
-		echolog "il path [$template_path] non esiste"
-		return 1
-	fi
-
-	if [ -d "$DIR_TEMPLATES/$template_name" ]
-	then
-		echolog "il template [$template_name] esiste gia'"
-		return 1
-	fi
-	
-	cp -r "$template_path" "$DIR_TEMPLATES/$template_name"
-	cp -r $DIR_CONF_TEMPLATE_SKELETONS/* "$DIR_TEMPLATES/$template_name/"
-	
-	echolog "template [$template_name] installato"
+  templates_available=`$HTTP_BIN "$URL_TEMPLATE_REPO/templates.list"`
+  
+  $BIN_DOWNLOAD "$URL_TEMPLATE_REPO/$template_name.zip"
+  $BIN_UNZIP -d $DIR_TEMPLATES $template_name.zip
+  if [ -f $template_name.zip ]; then rm $template_name.zip; fi
+	echolog "template [$template_name] installed"
 }
 
 tomcatctl_uninstall_template()
@@ -56,21 +44,21 @@ tomcatctl_uninstall_template()
 
 	if ! [ -d "$DIR_TEMPLATES/$template_name" ]
 	then
-		echolog "il template [$template_name] non esiste"
+		echolog "template [$template_name] is not installed"
 		return 1
 	fi
 	
-	echo "disinstallare il template [$template_name]? (y/n)"	
+	echo "uninstall template [$template_name]? (y/n)"	
 	read c
 
 	if [ "$c" = "y" ]
 	then
 		rm -rf "$DIR_TEMPLATES/$template_name/"
 	else
-		echolog "operazione annullata"
+		echolog "uninstall aborted"
 		return 1
 	fi
 	
-	echolog "template [$template_name] disinstallato"
+	echolog "template [$template_name] uninstalled"
 }
 

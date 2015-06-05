@@ -12,7 +12,7 @@ CATALINA_USER=""
 DEFAULT_TEMPLATE="base"
 
 # the url to the template repository
-URL_TEMPLATE_REPO="http://localhost/tomcatctl_repo"
+URL_TEMPLATE_REPO="http://tomcatctl.mapperr.net/tomcatctl"
 
 DIR_BIN="$DIR_BASE/bin"
 DIR_LOG="$DIR_BASE/log"
@@ -61,11 +61,19 @@ FILENAME_TAG="TAG"
 if hash wget
 then
 	HTTP_BIN="wget -qO- -t1 -T120 --no-proxy"
+  BIN_DOWNLOAD="wget -q -t1 -T120 --no-proxy"
 else
 	echo "impossibile trovare un client http valido!"
 	echo "installare un client http valido"
 	echo "clients validi: wget"
 	exit 1
+fi
+
+if hash unzip; then
+  BIN_UNZIP="unzip"
+else
+  echo "[unzip] command not present, please install it"
+  exit 1
 fi
 
 # rilevo ambienti che hanno bisogno di trattamenti particolari
