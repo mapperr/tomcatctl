@@ -11,6 +11,9 @@ CATALINA_USER=""
 # assicurarsi che esista almeno sto template
 DEFAULT_TEMPLATE="base"
 
+# the url to the template repository
+URL_TEMPLATE_REPO="http://localhost/tomcatctl_repo"
+
 DIR_BIN="$DIR_BASE/bin"
 DIR_LOG="$DIR_BASE/log"
 DIR_CONF="$DIR_BASE/conf"
@@ -102,7 +105,7 @@ get_timestamp()
 
 echolog()
 {
-	logmesg="`date +'%Y%m%d.%H%M%S'` >>> $1"
+	logmesg="`date +'%Y%m%d.%H%M%S'` - `whoami` >>> $1"
 	echo "$logmesg"
 	echo "$logmesg" >> "$FILE_LOG"
 }
