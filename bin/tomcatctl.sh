@@ -11,7 +11,7 @@ then
 	exit 1
 fi
 
-source "$FILE_CONFIG"
+. "$FILE_CONFIG"
 
 includes="templates.sh tomcat_instance_admin.sh tomcat_control.sh tomcat_instance_info.sh apps.sh"
 for include in $includes; do
@@ -20,7 +20,7 @@ for include in $includes; do
 	  echo "file [$include] not found"
 	  exit 1
   fi
-  source $file_include
+  . $file_include
 done
 
 

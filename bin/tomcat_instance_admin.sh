@@ -56,7 +56,7 @@ tomcatctl_create()
 	fi
 	
 	mkdir -p "$DIR_ISTANZA/bin"
-	echo 'source $DIR_TEMPLATE/bin/setenv.sh' > "$DIR_ISTANZA/bin/setenv.sh"
+	echo '. "$DIR_TEMPLATE/bin/setenv.sh"' > "$DIR_ISTANZA/bin/setenv.sh"
 	cp -r "$DIR_TEMPLATE/conf" "$DIR_ISTANZA/"
 	sed -i "/<\/tomcat-users>/ i $TOMCAT_MANAGER_USERS_LINE" "$DIR_ISTANZA/conf/tomcat-users.xml"
 	mkdir -p "$DIR_ISTANZA/lib"

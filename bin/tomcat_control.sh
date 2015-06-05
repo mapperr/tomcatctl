@@ -1,6 +1,3 @@
-#! /bin/bash
-
-
 tomcatctl_start()
 {
 	if [ -z "$1" ]
@@ -26,8 +23,7 @@ tomcatctl_start()
 	
 	template=`cat "$DIR_ISTANZA/$FILENAME_TEMPLATE"`
 	
-	export DIR_TEMPLATE="$DIR_TEMPLATES/$template"
-	export CATALINA_HOME="$DIR_TEMPLATE"
+	export CATALINA_HOME="$DIR_TEMPLATES/$template"
 	export CATALINA_BASE="$DIR_ISTANZA"
 	
 	# controllo se l'istanza e` attached
@@ -53,7 +49,7 @@ tomcatctl_start()
 		$CATALINA_HOME/bin/startup.sh
 	else
 		echolog "tentativo di avvio con comando su"
-		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" DIR_TEMPLATE="$DIR_TEMPLATES/$template" su -s /bin/sh -c "nohup $CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
+		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "nohup $CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
 		RET=$?
 		
 		# se non si hanno i permessi per utilizzare "su" il comando ritorna 126:
@@ -62,12 +58,12 @@ tomcatctl_start()
 		if [ $RET -eq 126 ]
 		then
 			echolog "tentativo di avvio con comando sudo -u"
-			sudo -u "$CATALINA_USER" CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" DIR_TEMPLATE="$DIR_TEMPLATES/$template" nohup bash "$CATALINA_HOME/bin/startup.sh" 2> /dev/null
+			sudo -u "$CATALINA_USER" CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" nohup bash "$CATALINA_HOME/bin/startup.sh" 2> /dev/null
 			RET=$?
 			if [ $RET -ne 0 ]
 			then
 				echolog "tentativo di avvio con comando sudo su"
-				sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" DIR_TEMPLATE="$DIR_TEMPLATES/$template" su -s /bin/sh -c "nohup $CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
+				sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "nohup $CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
 				RET=$?
 				if [ $RET -ne 0 ]
 				then
@@ -104,7 +100,6 @@ tomcatctl_stop()
 	
 	template=`cat "$DIR_ISTANZA/$FILENAME_TEMPLATE"`
 	
-	export DIR_TEMPLATE="$DIR_TEMPLATES/$template"
 	export CATALINA_HOME="$DIR_TEMPLATES/$template"
 	export CATALINA_BASE="$DIR_ISTANZA"
 	
@@ -131,7 +126,7 @@ tomcatctl_stop()
 		$CATALINA_HOME/bin/shutdown.sh
 	else
 		echolog "tentativo di arresto con comando su"
-		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" DIR_TEMPLATE="$DIR_TEMPLATES/$template" su -s /bin/sh -c "nohup $CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2> /dev/null
+		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "nohup $CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2> /dev/null
 		RET=$?
 		
 		# se non si hanno i permessi per utilizzare "su" il comando ritorna 126:
@@ -140,12 +135,12 @@ tomcatctl_stop()
 		if [ $RET -eq 126 ]
 		then
 			echolog "tentativo di arresto con comando sudo -u"
-			sudo -u "$CATALINA_USER" CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" DIR_TEMPLATE="$DIR_TEMPLATES/$template" nohup bash "$CATALINA_HOME/bin/shutdown.sh" 2> /dev/null
+			sudo -u "$CATALINA_USER" CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" nohup bash "$CATALINA_HOME/bin/shutdown.sh" 2> /dev/null
 			RET=$?
 			if [ $RET -ne 0 ]
 			then
 				echolog "tentativo di arresto con comando sudo su"
-				sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" DIR_TEMPLATE="$DIR_TEMPLATES/$template" su -s /bin/sh -c "nohup $CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2> /dev/null
+				sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "nohup $CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2> /dev/null
 				RET=$?
 				if [ $RET -ne 0 ]
 				then
@@ -161,7 +156,7 @@ tomcatctl_attached_start()
 {
 	if [ -r "$CATALINA_HOME/bin/setenv.sh" ]
 	then
-		source "$CATALINA_HOME/bin/setenv.sh"
+		. "$CATALINA_HOME/bin/setenv.sh"
 	fi
 	
 	if ! [ -z "$CATALINA_INIT" ]
@@ -209,7 +204,7 @@ tomcatctl_attached_stop()
 {
 	if [ -r "$CATALINA_HOME/bin/setenv.sh" ]
 	then
-		source "$CATALINA_HOME/bin/setenv.sh"
+		. "$CATALINA_HOME/bin/setenv.sh"
 	fi
 	
 	if ! [ "$CATALINA_INIT" = "" ]

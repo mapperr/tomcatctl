@@ -1,7 +1,7 @@
 # codice tomcat
 CODICE_TOMCAT=`basename $CATALINA_BASE`
 
-echo "codice istanza [$CODICE_TOMCAT]"
+echo "CATALINA_CODE: [$CODICE_TOMCAT]"
 
 # altro
 CATALINA_PID="$CATALINA_BASE/catalina.pid"
@@ -26,3 +26,4 @@ JAVA_OPTS="$JAVA_OPTS $INSTANCE_OPTS"
 
 # maschera che setti tutti i permessi per il gruppo e l'owner
 umask 0002
+
