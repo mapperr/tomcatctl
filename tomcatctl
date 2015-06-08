@@ -1,5 +1,5 @@
 #! /bin/bash
 
-DIR=`readlink -f $0`
-`dirname $DIR`/bin/tomcatctl.sh $@
+SCRIPT=`readlink -f $0`
+bash `dirname $SCRIPT`/bin/tomcatctl.sh "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9"
 exit $?
