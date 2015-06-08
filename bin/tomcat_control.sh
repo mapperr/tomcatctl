@@ -73,6 +73,7 @@ tomcatctl_start()
 			fi
 		fi
 	fi
+  echolog "tomcat [$istanza] started"
 }
 
 tomcatctl_stop()
@@ -150,6 +151,7 @@ tomcatctl_stop()
 			fi
 		fi
 	fi
+  echolog "tomcat [$istanza] stopped"
 }
 
 tomcatctl_attached_start()
