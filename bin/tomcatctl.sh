@@ -13,7 +13,7 @@ fi
 
 . "$FILE_CONFIG"
 
-includes="templates.sh tomcat_instance_admin.sh tomcat_control.sh tomcat_instance_info.sh apps.sh"
+includes="templates.sh tomcat_instance_admin.sh tomcat_control.sh tomcat_instance_info.sh apps.sh tomcatctl_utils.sh"
 for include in $includes; do
   file_include="bin/$include"
   if ! [ -r "$file_include" ]; then
