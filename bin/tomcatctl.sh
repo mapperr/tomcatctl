@@ -138,7 +138,7 @@ if [ "$1" = "detach" ]; then
 	exit $?
 fi
 
-if [ "$1" = "cp" ]; then
+if [ "$1" = "clone" ]; then
 	shift
 	tomcatctl_clona_istanza $@
 	exit $?
