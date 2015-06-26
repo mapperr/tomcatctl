@@ -13,7 +13,7 @@ fi
 
 . "$FILE_CONFIG"
 
-includes="templates.sh tomcat_instance_admin.sh tomcat_control.sh tomcat_instance_info.sh apps.sh tomcatctl_utils.sh"
+includes="templates.sh tomcat_instance_admin.sh tomcat_instance_control.sh tomcat_instance_info.sh apps.sh tomcatctl_utils.sh"
 for include in $includes; do
   file_include="bin/$include"
   if ! [ -r "$file_include" ]; then
@@ -51,6 +51,9 @@ helpmsg()
 	echo ""
 	echo "commands:"
 	echo ""
+	echo "- help"
+	echo ""
+	test $full && echo "	show this help" && echo ""
 	echo "- templates"
 	test $full && echo "	list installed and available templates" && echo ""
 	echo "- install <template_name>"
@@ -59,7 +62,7 @@ helpmsg()
 	test $full && echo "	delete an installed template" && echo ""
 	echo "- add [template] [codice_istanza] [tag_istanza]"
 	test $full && echo "	crea un'istanza di tomcat dal template [template] (o da quello di default se omesso) e gli assegna un codice istanza non ancora utilizzato oppure [codice_istanza] se specificato inoltre gli assegna un tag se specificato" && echo ""
-	echo "- del <codice_istanza>"
+	echo "- delete <codice_istanza>"
 	test $full && echo "	elimina l'istanza a cui e' stato assegnato il codice <codice_istanza>" && echo ""
 	echo "- clone <codice_istanza_originale> [codice_istanza_clonata] [tag_istanza_clonata]"
 	test $full && echo "	clona l'istanza specificata" && echo ""
@@ -120,7 +123,7 @@ if [ "$1" = "add" ]; then
 	exit $?
 fi
 
-if [ "$1" = "rm" ]; then
+if [ "$1" = "delete" ]; then
 	shift
 	tomcatctl_delete $@
 	exit $?

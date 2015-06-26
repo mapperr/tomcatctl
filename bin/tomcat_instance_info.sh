@@ -126,6 +126,8 @@ tomcatctl_list()
 			if [ -r "$DIR_ISTANZE/$directory/$FILENAME_TAG" ]
 			then
 				tag=`cat $DIR_ISTANZE/$directory/$FILENAME_TAG`
+      else
+        tag="untagged"
 			fi
 			
 			STATUSROWS="$STATUSROWS$SEPARATOR$directory $stato $tag $template"

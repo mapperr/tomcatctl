@@ -49,7 +49,7 @@ tomcatctl_start()
 		$CATALINA_HOME/bin/startup.sh
 	else
 		echolog "tentativo di avvio con comando su"
-		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "nohup $CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
+		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "nohup $CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2>> "$FILE_LOG"
 		RET=$?
 		
 		# se non si hanno i permessi per utilizzare "su" il comando ritorna 126:
@@ -58,12 +58,12 @@ tomcatctl_start()
 		if [ $RET -eq 126 ]
 		then
 			echolog "tentativo di avvio con comando sudo -u"
-			sudo -u "$CATALINA_USER" CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" nohup bash "$CATALINA_HOME/bin/startup.sh" 2> /dev/null
+			sudo -u "$CATALINA_USER" CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" nohup bash "$CATALINA_HOME/bin/startup.sh" 2>> "$FILE_LOG"
 			RET=$?
 			if [ $RET -ne 0 ]
 			then
 				echolog "tentativo di avvio con comando sudo su"
-				sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "nohup $CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
+				sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "nohup $CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2>> "$FILE_LOG"
 				RET=$?
 				if [ $RET -ne 0 ]
 				then
@@ -127,7 +127,7 @@ tomcatctl_stop()
 		$CATALINA_HOME/bin/shutdown.sh
 	else
 		echolog "tentativo di arresto con comando su"
-		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "nohup $CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2> /dev/null
+		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "nohup $CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2>> "$FILE_LOG"
 		RET=$?
 		
 		# se non si hanno i permessi per utilizzare "su" il comando ritorna 126:
@@ -136,12 +136,12 @@ tomcatctl_stop()
 		if [ $RET -eq 126 ]
 		then
 			echolog "tentativo di arresto con comando sudo -u"
-			sudo -u "$CATALINA_USER" CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" nohup bash "$CATALINA_HOME/bin/shutdown.sh" 2> /dev/null
+			sudo -u "$CATALINA_USER" CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" nohup bash "$CATALINA_HOME/bin/shutdown.sh" 2>> "$FILE_LOG"
 			RET=$?
 			if [ $RET -ne 0 ]
 			then
 				echolog "tentativo di arresto con comando sudo su"
-				sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "nohup $CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2> /dev/null
+				sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "nohup $CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2>> "$FILE_LOG"
 				RET=$?
 				if [ $RET -ne 0 ]
 				then
@@ -182,7 +182,7 @@ tomcatctl_attached_start()
 		fi
 		
 		echolog "tentativo di avvio con comando su"
-		su -s /bin/sh -c "nohup $CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2> /dev/null
+		su -s /bin/sh -c "nohup $CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2>> "$FILE_LOG"
 		RET=$?
 		
 		# se non si hanno i permessi per utilizzare "su" il comando ritorna 126:
@@ -193,7 +193,7 @@ tomcatctl_attached_start()
 			if hash sudo
 			then
 				echolog "tentativo di avvio con comando sudo -u"
-				sudo -u "$CATALINA_USER" bash "$CATALINA_HOME/bin/startup.sh" 2> /dev/null
+				sudo -u "$CATALINA_USER" bash "$CATALINA_HOME/bin/startup.sh" 2>> "$FILE_LOG"
 				RET=$?
 			fi
 		fi
@@ -225,7 +225,7 @@ tomcatctl_attached_stop()
 		fi
 		
 		echolog "tentativo di arresto con comando su"
-		su -s /bin/sh -c "$CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2> /dev/null
+		su -s /bin/sh -c "$CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2>> "$FILE_LOG"
 		RET=$?
 		
 		# se non si hanno i permessi per utilizzare "su" il comando ritorna 126:
@@ -236,7 +236,7 @@ tomcatctl_attached_stop()
 			if hash sudo
 			then
 				echolog "tentativo di arresto con comando sudo -u"
-				sudo -u "$CATALINA_USER" bash "$CATALINA_HOME/bin/shutdown.sh" 2> /dev/null
+				sudo -u "$CATALINA_USER" bash "$CATALINA_HOME/bin/shutdown.sh" 2>> "$FILE_LOG"
 				RET=$?
 			fi
 		fi

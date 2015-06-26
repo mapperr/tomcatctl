@@ -1,5 +1,4 @@
-# incluso da builder.sh
-# la DIR_BASE e` definita in builder.sh
+# tomcatctl configuration
 
 DATA=`date +'%Y%m%d'`
 ORA=`date +'%H%M%S'`

@@ -6,12 +6,15 @@
 
 tomcatctl_list_templates()
 {
-  echo "templates installed:"
+  echo "=== available templates on [$URL_TEMPLATE_REPO] ===="
+  $HTTP_BIN "$URL_TEMPLATE_REPO/templates.list"
+
+  echo ""
+  echo "=== installed templates ==="
   for template in `ls $DIR_TEMPLATES`; do
     echo "$template"
   done
-  echo "templates available:"
-  $HTTP_BIN "$URL_TEMPLATE_REPO/templates.list"
+
 }
 
 tomcatctl_install_template()

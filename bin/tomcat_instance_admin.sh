@@ -425,11 +425,11 @@ tomcatctl_clean_instance()
 		fi
 		
 		echolog "backup e clean dei logs dell'istanza [$istanza]"
-		FILE_LOGS_TARGZ="$DIR_TOMCAT_LOGS/tomcat.$istanza.logs.`get_timestamp`.tar.gz"
+		FILE_LOGS_TARGZ="$DIR_ISTANZA/tomcat.$istanza.logs.`get_timestamp`.tar.gz"
 		DIR_CURRENT=`pwd -P`
 		cd $DIR_TOMCAT_LOGS
-		tar czf $FILE_LOGS_TARGZ ./*.log
+		tar czf $FILE_LOGS_TARGZ ./*
 		cd $DIR_CURRENT
-		rm -f $DIR_TOMCAT_LOGS/*.log
+		rm -f $DIR_TOMCAT_LOGS/*
 	fi
 }
