@@ -44,6 +44,8 @@ tomcatctl_start()
 		fi
 	fi
 	
+  echolog "starting instance [$istanza]"
+  
 	if [ -z "$CATALINA_USER" ] || [ "$CATALINA_USER" = "`whoami`" ]
 	then
 		$CATALINA_HOME/bin/startup.sh
@@ -122,6 +124,8 @@ tomcatctl_stop()
 		fi
 	fi
 	
+  echolog "stopping instance [$istanza]"
+  
 	if [ -z "$CATALINA_USER" ] || [ "$CATALINA_USER" = "`whoami`" ]
 	then
 		$CATALINA_HOME/bin/shutdown.sh
