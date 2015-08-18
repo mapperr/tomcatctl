@@ -60,34 +60,34 @@ helpmsg()
 	test $full && echo "	download and install a template" && echo ""
 	echo "- uninstall <template_name>"
 	test $full && echo "	delete an installed template" && echo ""
-	echo "- add [template] [codice_istanza] [tag_istanza]"
-	test $full && echo "	crea un'istanza di tomcat dal template [template] (o da quello di default se omesso) e gli assegna un codice istanza non ancora utilizzato oppure [codice_istanza] se specificato inoltre gli assegna un tag se specificato" && echo ""
-	echo "- delete <codice_istanza>"
-	test $full && echo "	elimina l'istanza a cui e' stato assegnato il codice <codice_istanza>" && echo ""
-	echo "- clone <codice_istanza_originale> [codice_istanza_clonata] [tag_istanza_clonata]"
-	test $full && echo "	clona l'istanza specificata" && echo ""
-	echo "- attach <path_catalina_home> [codice_istanza] [tag_istanza]"
-	test $full && echo "	aggancia l'istanza di tomcat <path_catalina_home> e gli assegna un codice istanza non ancora utilizzato oppure [codice_istanza] se specificato inoltre gli assegna un tag se specificato" && echo ""
-	echo "- detach <codice_istanza>"
-	test $full && echo "	sgancia l'istanza virtuale a cui e' stato assegnato il codice <codice_istanza>" && echo ""
+	echo "- add [template] [code] [tag]"
+	test $full && echo "	creates a new instance" && echo ""
+	echo "- delete <code>"
+	test $full && echo "	deletes an instance" && echo ""
+	echo "- clone <source_code> [destination_code] [destination_tag]"
+	test $full && echo "	clones the instance <source_code>" && echo ""
+	echo "- attach <path_catalina_home> [code] [tag]"
+	test $full && echo "	attachs to a existent tomcat instance outside tomcatctl" && echo ""
+	echo "- detach <code>"
+	test $full && echo "	detach the attached external instance" && echo ""
 	echo "- ls"
-	test $full && echo "	lista dei templates e delle istanze" && echo ""
-	echo "- apps <codice_istanza>"
-	test $full && echo "	lista delle applicazioni deployate con relativo status, context path e versione" && echo ""
-	echo "- appstart | appstop | apprestart | appreload <codice_istanza> <context_applicazione> <versione_applicazione>"
-	test $full && echo "	controllo dell'applicazione" && echo ""
-	echo "- start | stop | restart <codice_istanza>"
-	test $full && echo "	controllo del tomcat" && echo ""
-	echo "- info <codice_istanza>"
-	test $full && echo "	mostra informazioni sullo stato dell'istanza" && echo ""
-	echo "- deploy <codice_istanza> <path_war> [context_path] [version]"
-	test $full && echo "	effettua il deploy del war passato come argomento con il context path specificato se il context path e' gia' utilizzato, allora viene effettuato prima l'undeploy dell'applicazione che ha quel context path. Note: se c'e' l'autoDeploy attivo sul tomcat, allora il context path e' obbligatorio" && echo ""
-	echo "- undeploy <codice_istanza> <context_path> <version>"
-	test $full && echo "	effettua l'undeploy dell'applicazione che ha il context path passato come argomento" && echo ""
-	echo "- log <codice_istanza> [tail | cat]"
-	test $full && echo "	mostra il catalina.out dell'istanza <codice_istanza>" && echo ""
-	echo "- clean [istanza [logs]]"
-	test $full && echo "	elimina i file temporanei di tomcatctl, oppure di un'istanza di tomcat. Con [logs] vengono eliminati anche i files di log" && echo ""
+	test $full && echo "	lists templates and instances under control" && echo ""
+	echo "- apps <code>"
+	test $full && echo "	lists applications deployed on the instance" && echo ""
+	echo "- appstart | appstop | apprestart | appreload <code> <application_context_root> <application_version>"
+	test $full && echo "	controls an application" && echo ""
+	echo "- start | stop | restart <code>"
+	test $full && echo "	controls the instance" && echo ""
+	echo "- info <code>"
+	test $full && echo "	shows info about the instance" && echo ""
+	echo "- deploy <code> <path_war> [context_root] [version]"
+	test $full && echo "	deploys the war on target instance" && echo ""
+	echo "- undeploy <code> <context_root> <version>"
+	test $full && echo "	undeploy an application" && echo ""
+	echo "- log <code> [tail | cat]"
+	test $full && echo "	shows the catalina.out of the instance, by default with the 'less' command" && echo ""
+	echo "- clean [code [logs]]"
+	test $full && echo "	deletes the tomcatctl log files. If an instance is specified then deletes the work directory. If 'logs' is specified then backups the 'logs' folder and deletes its contents" && echo ""
 }
 
 
@@ -169,7 +169,7 @@ if [ "$1" = "restart" ]; then
 	tomcatctl_stop $@
 	RET=$?
 	if [ $RET -ne 0 ]; then
-		echo "impossibile stoppare l'istanza [$1]"
+		echo "cannot stop instance [$1]"
 		exit $RET
 	fi
 	sleep 3
@@ -244,13 +244,13 @@ if [ "$1" = "apprestart" ]; then
 	tomcatctl_appstop $@
 	RET=$?
 	if [ $RET -ne 0 ]; then
-		echolog "arresto applicazione fallito"
+		echolog "application start failed"
 		exit $RET
 	fi
 	sleep 2
 	tomcatctl_appstart $@
 	if [ $RET -ne 0 ]; then
-		echolog "avvio applicazione fallito"
+		echolog "application stop failed"
 		exit $RET
 	fi
 	exit $RET
