@@ -60,7 +60,7 @@ helpmsg()
 	test $full && echo "	download and install a template" && echo ""
 	echo "- uninstall <template_name>"
 	test $full && echo "	delete an installed template" && echo ""
-	echo "- add [template] [code] [tag]"
+	echo "- create [template] [code] [tag]"
 	test $full && echo "	creates a new instance" && echo ""
 	echo "- delete <code>"
 	test $full && echo "	deletes an instance" && echo ""
@@ -117,7 +117,7 @@ if [ "$1" = "uninstall" ]; then
   exit $?
 fi
 
-if [ "$1" = "add" ]; then
+if [ "$1" = "create" ]; then
 	shift
 	tomcatctl_create $@
 	exit $?
