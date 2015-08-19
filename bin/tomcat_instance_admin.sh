@@ -85,8 +85,7 @@ tomcatctl_create()
 
 tomcatctl_delete()
 {
-	if [ -z "$1" ]
-	then
+	if [ -z "$1" ]; then
 		helpmsg
 		return 1
 	fi
@@ -319,12 +318,77 @@ tomcatctl_detach()
 	fi
 }
 
+tomcatctl_edit()
+{
+	if [ -z "$1" ]; then
+		helpmsg
+		return 1
+	fi
+	
+	if [ -z "$2" ]; then
+		helpmsg
+		return 1
+	fi
+	
+	code="$1"
+	new_template="$2"
+	new_code="$3"
+	new_tag="$4"
+	
+	# check if code exists
+	DIR_INSTANCE="$DIR_ISTANZE/$code"
+	if ! [ -e "$DIR_INSTANCE" ]; then
+		echolog "instance [$code] not found"
+		return 2
+	fi
+	
+	# check if instance is running
+	tomcatctl_status "$code"
+	RUNNING=$?
+	if [ $RUNNING -eq 0 ]; then
+		echolog "instance [$code] is running, stop it first"
+		return 5
+	fi
+	
+	# check if new_template exists
+	if ! [ -d "$DIR_TEMPLATES/$new_template" ]; then
+		echolog "template [$new_template] not found"
+		return 2
+	fi
+	
+	echo "$new_template" > "$DIR_INSTANCE/TEMPLATE"
+	
+	if [ -z "$new_code" ]; then return 0; fi
+	
+	# check if new_code is valid
+	if ! tomcatctl_codice_istanza_is_valido "$new_code"; then
+		echolog "[$new_code] is not a valid instance code"
+		echolog "a valid code is a 2 digit number"
+		return 3
+	fi
+	
+	# check if new_code is available
+	DIR_NEW_INSTANCE="$DIR_ISTANZE/$new_code"
+	if ! [ -e "$DIR_NEW_INSTANCE" ]; then
+	 	# if new_code is available mv instance to new code
+		mv "$DIR_INSTANCE" "$DIR_NEW_INSTANCE"
+	elif [ ! "$code" = "$new_code" ]; then
+		echolog "code [$new_code] is already taken"
+		return 3
+	fi
+	
+	# if new_tag is not blank then change tag
+	if [ -z "$new_tag" ]; then return 0; fi
+	echo "$new_tag" > "$DIR_NEW_INSTANCE/TAG"
+	
+	echolog "instance [$code] modified"
+}
+
 tomcatctl_clona_istanza()
 {
 	istanza_originale="$1"
 	
-	if [ -z "$istanza_originale" ]
-	then
+	if [ -z "$istanza_originale" ]; then
 		helpmsg
 		return 1
 	fi

@@ -62,6 +62,8 @@ helpmsg()
 	test $full && echo "	delete an installed template" && echo ""
 	echo "- create [template] [code] [tag]"
 	test $full && echo "	creates a new instance" && echo ""
+	echo "- edit <code> <template> [ new_code [tag] ]"
+	test $full && echo "	modify an instance" && echo ""
 	echo "- delete <code>"
 	test $full && echo "	deletes an instance" && echo ""
 	echo "- clone <source_code> [destination_code] [destination_tag]"
@@ -120,6 +122,12 @@ fi
 if [ "$1" = "create" ]; then
 	shift
 	tomcatctl_create $@
+	exit $?
+fi
+
+if [ "$1" = "edit" ]; then
+	shift
+	tomcatctl_edit $@
 	exit $?
 fi
 
