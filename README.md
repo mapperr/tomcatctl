@@ -3,21 +3,23 @@ tomcatctl
 
 commands:
 
+- help
+
 - templates
 - install <template_name>
 - uninstall <template_name>
-- add [template] [codice_istanza] [tag_istanza]
-- del <codice_istanza>
-- clone <codice_istanza_originale> [codice_istanza_clonata] [tag_istanza_clonata]
-- attach <path_catalina_home> [codice_istanza] [tag_istanza]
-- detach <codice_istanza>
+- create [template] [code] [tag]
+- edit <code> <template> [ new_code [tag] ]
+- delete <code>
+- clone <source_code> [destination_code] [destination_tag]
+- attach <path_catalina_home> [code] [tag]
+- detach <code>
 - ls
-- apps <codice_istanza>
-- appstart | appstop | apprestart | appreload <codice_istanza> <context_applicazione> <versione_applicazione>
-- start | stop | restart <codice_istanza>
-- info <codice_istanza>
-- deploy <codice_istanza> <path_war> [context_path] [version]
-- undeploy <codice_istanza> <context_path> <version>
-- log <codice_istanza> [tail | cat]
-- clean [istanza [logs]]
-
+- apps <code>
+- appstart | appstop | apprestart | appreload <code> <application_context_root> <application_version>
+- start | stop | restart <code>
+- info <code>
+- deploy <code> <path_war> [context_root] [version]
+- undeploy <code> <context_root> <version>
+- log <code> [tail | cat]
+- clean [code [logs]]
