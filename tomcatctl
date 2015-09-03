@@ -8,5 +8,5 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
-bash `dirname $DIR`/bin/tomcatctl.sh "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9"
+bash "$DIR/bin/tomcatctl.sh" "$1" "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9"
 exit $?

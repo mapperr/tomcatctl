@@ -52,14 +52,10 @@ helpmsg()
 	echo "commands:"
 	echo ""
 	echo "- help"
-	echo ""
 	test $full && echo "	show this help" && echo ""
-	echo "- templates"
-	test $full && echo "	list installed and available templates" && echo ""
-	echo "- install <template_name>"
-	test $full && echo "	download and install a template" && echo ""
-	echo "- uninstall <template_name>"
-	test $full && echo "	delete an installed template" && echo ""
+	echo ""
+	echo "- ls"
+	test $full && echo "	lists templates and instances under control" && echo ""
 	echo "- create [template] [code] [tag]"
 	test $full && echo "	creates a new instance" && echo ""
 	echo "- edit <code> <template> [ new_code [tag] ]"
@@ -72,24 +68,30 @@ helpmsg()
 	test $full && echo "	attachs to a existent tomcat instance outside tomcatctl" && echo ""
 	echo "- detach <code>"
 	test $full && echo "	detach the attached external instance" && echo ""
-	echo "- ls"
-	test $full && echo "	lists templates and instances under control" && echo ""
-	echo "- apps <code>"
-	test $full && echo "	lists applications deployed on the instance" && echo ""
-	echo "- appstart | appstop | apprestart | appreload <code> <application_context_root> <application_version>"
-	test $full && echo "	controls an application" && echo ""
 	echo "- start | stop | restart <code>"
 	test $full && echo "	controls the instance" && echo ""
 	echo "- info <code>"
 	test $full && echo "	shows info about the instance" && echo ""
-	echo "- deploy <code> <path_war> [context_root] [version]"
-	test $full && echo "	deploys the war on target instance" && echo ""
-	echo "- undeploy <code> <context_root> <version>"
-	test $full && echo "	undeploy an application" && echo ""
 	echo "- log <code> [tail | cat]"
 	test $full && echo "	shows the catalina.out of the instance, by default with the 'less' command" && echo ""
 	echo "- clean [code [logs]]"
 	test $full && echo "	deletes the tomcatctl log files. If an instance is specified then deletes the work directory. If 'logs' is specified then backups the 'logs' folder and deletes its contents" && echo ""
+	echo ""
+	echo "- app ls <code>"
+	test $full && echo "	lists applications deployed on the instance" && echo ""
+	echo "- app start | stop | restart | reload <code> <application_context_root> <application_version>"
+	test $full && echo "	controls an application" && echo ""
+	echo "- app deploy <code> <path_war> [context_root] [version]"
+	test $full && echo "	deploys the war on target instance" && echo ""
+	echo "- app undeploy <code> <context_root> <version>"
+	test $full && echo "	undeploy an application" && echo ""
+	echo ""
+	echo "- template ls"
+	test $full && echo "	list installed and available templates" && echo ""
+	echo "- template install <template_name>"
+	test $full && echo "	download and install a template" && echo ""
+	echo "- template uninstall <template_name>"
+	test $full && echo "	delete an installed template" && echo ""
 }
 
 
@@ -102,21 +104,21 @@ if [ "$1" = "help" ]; then
   exit $?
 fi
 
-if [ "$1" = "templates" ]; then
-  tomcatctl_list_templates $@
-  exit $?
-fi
-
-if [ "$1" = "install" ]; then
-  shift
-  tomcatctl_install_template $@
-  exit $?
-fi
-
-if [ "$1" = "uninstall" ]; then
-  shift
-  tomcatctl_uninstall_template $@
-  exit $?
+if [ "$1" = "template" ]; then
+	shift
+	
+	if [ "$1" = "ls" ]; then
+		tomcatctl_list_templates $@
+		exit $?
+	elif [ "$1" = "install" ]; then
+		shift
+		tomcatctl_install_template $@
+		exit $?
+	elif [ "$1" = "uninstall" ]; then
+		shift
+		tomcatctl_uninstall_template $@
+		exit $?
+	fi
 fi
 
 if [ "$1" = "create" ]; then
@@ -223,45 +225,41 @@ if [ "$1" = "undeploy" ]; then
 	exit $?
 fi
 
-if [ "$1" = "apps" ]; then
+if [ "$1" = "app" ]; then
 	shift
-	tomcatctl_info_apps $@
-	exit $?
-fi
-
-if [ "$1" = "appstart" ]; then
-	shift
-	tomcatctl_appstart $@
-	exit $?
-fi
-
-if [ "$1" = "appstop" ]; then
-	shift
-	tomcatctl_appstop $@
-	exit $?
-fi
-
-if [ "$1" = "appreload" ]; then
-	shift
-	tomcatctl_appreload $@
-	exit $?
-fi
-
-if [ "$1" = "apprestart" ]; then
-	shift
-	tomcatctl_appstop $@
-	RET=$?
-	if [ $RET -ne 0 ]; then
-		echolog "application start failed"
+	
+	if [ "$1" = "ls" ]; then
+		shift
+		tomcatctl_info_apps $@
+		exit $?
+	elif [ "$1" = "start" ]; then
+		shift
+		tomcatctl_appstart $@
+		exit $?
+	elif [ "$1" = "appstop" ]; then
+		shift
+		tomcatctl_appstop $@
+		exit $?
+	elif [ "$1" = "appreload" ]; then
+		shift
+		tomcatctl_appreload $@
+		exit $?
+	elif [ "$1" = "apprestart" ]; then
+		shift
+		tomcatctl_appstop $@
+		RET=$?
+		if [ $RET -ne 0 ]; then
+			echolog "application start failed"
+			exit $RET
+		fi
+		sleep 2
+		tomcatctl_appstart $@
+		if [ $RET -ne 0 ]; then
+			echolog "application stop failed"
+			exit $RET
+		fi
 		exit $RET
 	fi
-	sleep 2
-	tomcatctl_appstart $@
-	if [ $RET -ne 0 ]; then
-		echolog "application stop failed"
-		exit $RET
-	fi
-	exit $RET
 fi
 
 if [ "$1" = "clean" ]; then
@@ -270,7 +268,6 @@ if [ "$1" = "clean" ]; then
   else tomcatctl_clean_instance $@; fi
 	exit $?
 fi
-
 
 helpmsg
 exit 0
