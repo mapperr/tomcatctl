@@ -60,7 +60,7 @@ FILENAME_TAG="TAG"
 if hash wget
 then
 	HTTP_BIN="wget -qO- -t1 -T120 --no-proxy"
-  BIN_DOWNLOAD="wget -q -t1 -T120 --no-proxy"
+	BIN_DOWNLOAD="wget -q -t1 -T120 --no-proxy"
 else
 	echo "impossibile trovare un client http valido!"
 	echo "installare un client http valido"

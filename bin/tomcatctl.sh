@@ -76,6 +76,10 @@ helpmsg()
 	test $full && echo "	shows the catalina.out of the instance, by default with the 'less' command" && echo ""
 	echo "- clean [code [logs]]"
 	test $full && echo "	deletes the tomcatctl log files. If an instance is specified then deletes the work directory. If 'logs' is specified then backups the 'logs' folder and deletes its contents" && echo ""
+	echo "- export <code> [export_dir]"
+	test $full && echo "	export the specified instance in exported_dir if specified" && echo ""
+	echo "- import <exported_file> [code]"
+	test $full && echo "	import instance file into first available code or into the specified code" && echo ""
 	echo ""
 	echo "- app ls <code>"
 	test $full && echo "	lists applications deployed on the instance" && echo ""
@@ -222,6 +226,18 @@ fi
 if [ "$1" = "undeploy" ]; then
 	shift
 	tomcatctl_undeploy $@
+	exit $?
+fi
+
+if [ "$1" = "export" ]; then
+	shift
+	tomcatctl_export_instance $1 $2 $3
+	exit $?
+fi
+
+if [ "$1" = "import" ]; then
+	shift
+	tomcatctl_import_instance $1 $2 $3
 	exit $?
 fi
 

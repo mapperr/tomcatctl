@@ -14,6 +14,8 @@ commands:
 - start | stop | restart <code>
 - info <code>
 - log <code> [tail | cat]
+- export <code> [export_dir]
+- import <file> [code]
 - clean [code [logs]]
 
 - app ls <code>

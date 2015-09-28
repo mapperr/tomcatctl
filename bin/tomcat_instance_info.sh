@@ -65,7 +65,7 @@ tomcatctl_status()
 	DIR_ISTANZA="$DIR_ISTANZE/$istanza"
 	if ! [ -d "$DIR_ISTANZA" ]
 	then
-		return 1
+		return 2
 	fi
 	
 	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:90$istanza/$TOMCAT_MANAGER_CONTEXT/text/serverinfo"

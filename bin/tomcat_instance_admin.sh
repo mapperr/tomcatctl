@@ -468,7 +468,6 @@ tomcatctl_clean_instance()
 	DIR_ISTANZA="$DIR_ISTANZE/$istanza"
 
 	if [ ! -d "$DIR_ISTANZA" ]; then
-	
 		echolog "impossibile ripulire l'istanza [$istanza]: il path [$DIR_ISTANZA] non esiste"
 		return 1
 	fi
@@ -497,3 +496,82 @@ tomcatctl_clean_instance()
 		rm -f $DIR_TOMCAT_LOGS/*
 	fi
 }
+
+tomcatctl_export_instance()
+{
+	istance="$1"
+	dir_export="$2"
+	
+	if [ -z "$istance" ]; then
+		helpmsg
+		return 1
+	fi
+	
+	if [ -z "$dir_export" ]; then
+		dir_export="`pwd`/"
+	else
+		if ! [ -d "$dir_export" ]; then
+			echolog "directory [$dir_export] does not exists"
+			return 1
+		fi
+	fi
+	
+	DIR_ISTANZA="$DIR_ISTANZE/$istance"
+	if ! [ -d "$DIR_ISTANZA" ]
+	then
+		echolog "instance [$istance] does not exists"
+		return 1
+	fi
+	
+	path_exported_file="$dir_export/tomcat_$instance.tar.gz"
+	tar zcf $path_exported_file $DIR_ISTANZA
+	
+	echolog "exported instance [$istance] at [$path_exported_file]"
+}
+
+tomcatctl_import_instance()
+{
+	file_instance="$1"
+	code="$2"
+	
+	if [ -z "$file_instance" ]; then
+		helpmsg
+		return 1
+	fi
+	
+	if [ -z "$code" ]; then
+			istanza="00"
+		
+		while [ -d "$DIR_ISTANZE/$istanza" ]
+		do
+			istanza=`expr $istanza + 1`
+			if [ $istanza -lt 10 ]
+			then
+				istanza="0$istanza"
+			fi
+		done
+	else
+		DIR_ISTANZA="$DIR_ISTANZE/$istance"
+		if [ -d "$DIR_ISTANZA" ]
+		then
+			echolog "instance [$istance] already exists"
+			return 1
+		fi
+	fi
+	
+	if ! [ -f "$file_instance" ]; then
+		echolog "file [$file_instance] does not exists"
+		return 1
+	fi
+	
+	cd "/tmp"
+	dir_temp=`get_timestamp`
+	mkdir $dir_temp
+	tar zxf $file_instance
+	RET=$?; if [ $RET -ne 0 ]; then echolog "untar of [$file_instance] failed"; return 2; fi
+	mv $dir_temp $code
+	cd -
+	
+	echolog "imported file [$file_instance] at code [$code]"
+}
+
