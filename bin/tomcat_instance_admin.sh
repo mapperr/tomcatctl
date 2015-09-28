@@ -478,6 +478,11 @@ tomcatctl_clean_instance()
 	
 	subarea="$2"
 	if [ "$subarea" = "logs" ]; then
+		
+		if ! [ -d "$DIR_ISTANZA/bak" ]; then
+			mkdir "$DIR_ISTANZA/bak"
+			RET=$?; if [ $RET -ne 0 ]; then echolog "cannot create [$DIR_ISTANZA/bak] directory"; return 2; fi
+		fi
 	
 		DIR_TOMCAT_LOGS="$DIR_ISTANZA/logs"
 		
@@ -488,7 +493,7 @@ tomcatctl_clean_instance()
 		fi
 		
 		echolog "backup e clean dei logs dell'istanza [$istanza]"
-		FILE_LOGS_TARGZ="$DIR_ISTANZA/tomcat.$istanza.logs.`get_timestamp`.tar.gz"
+		FILE_LOGS_TARGZ="$DIR_ISTANZA/bak/tomcat.$istanza.logs.`get_timestamp`.tar.gz"
 		DIR_CURRENT=`pwd -P`
 		cd $DIR_TOMCAT_LOGS
 		tar czf $FILE_LOGS_TARGZ ./*
@@ -508,7 +513,7 @@ tomcatctl_export_instance()
 	fi
 	
 	if [ -z "$dir_export" ]; then
-		dir_export="`pwd`/"
+		dir_export="`pwd`"
 	else
 		if ! [ -d "$dir_export" ]; then
 			echolog "directory [$dir_export] does not exists"
@@ -523,18 +528,20 @@ tomcatctl_export_instance()
 		return 1
 	fi
 	
-	path_exported_file="$dir_export/tomcat_$instance.tar.gz"
-	tar zcf $path_exported_file $DIR_ISTANZA/*
+	hostname=`hostname`
+	path_exported_file="$dir_export/tomcat-$hostname-$istance.tar.gz"
+	tar zcf $path_exported_file $DIR_ISTANZA/* 2> /dev/null
+	RET=$?; if [ $RET -ne 0 ]; then echolog "failed to export istance [$istance]"; return 2; fi
 	
 	echolog "exported instance [$istance] at [$path_exported_file]"
 }
 
 tomcatctl_import_instance()
 {
-	file_instance="$1"
+	file_istance="$1"
 	code="$2"
 	
-	if [ -z "$file_instance" ]; then
+	if [ -z "$file_istance" ]; then
 		helpmsg
 		return 1
 	fi
@@ -559,19 +566,19 @@ tomcatctl_import_instance()
 		fi
 	fi
 	
-	if ! [ -f "$file_instance" ]; then
-		echolog "file [$file_instance] does not exists"
+	if ! [ -f "$file_istance" ]; then
+		echolog "file [$file_istance] does not exists"
 		return 1
 	fi
 	
 	cd "/tmp"
 	dir_temp=`get_timestamp`
 	mkdir $dir_temp
-	tar zxf $file_instance
-	RET=$?; if [ $RET -ne 0 ]; then echolog "untar of [$file_instance] failed"; return 2; fi
+	tar zxf $file_istance
+	RET=$?; if [ $RET -ne 0 ]; then echolog "untar of [$file_istance] failed"; return 2; fi
 	mv $dir_temp $code
 	cd -
 	
-	echolog "imported file [$file_instance] at code [$code]"
+	echolog "imported file [$file_istance] at code [$code]"
 }
 
