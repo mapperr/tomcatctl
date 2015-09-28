@@ -524,7 +524,7 @@ tomcatctl_export_instance()
 	fi
 	
 	path_exported_file="$dir_export/tomcat_$instance.tar.gz"
-	tar zcf $path_exported_file $DIR_ISTANZA
+	tar zcf $path_exported_file $DIR_ISTANZA/*
 	
 	echolog "exported instance [$istance] at [$path_exported_file]"
 }

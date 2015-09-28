@@ -3,17 +3,16 @@
 cd `dirname $0`
 DIR_BASE=`pwd -P`
 
-
 # ---------------------------------------------------------
 # setup
 # ---------------------------------------------------------
 
-URL_REPOSITORY="http://localhost/"
+URL_REPOSITORY="http://tomcatctl.mapperr.net/tomcatctl"
 
 PATH_REPO="tomcatctl"
+PATH_PACKAGE="tomcatctl.tar.gz"
 PATH_TEMPLATES="templates"
 PATH_JDK="jdk"
-PATH_PACKAGE="tomcatctl.zip"
 PATH_TEMPLATE_LIST="template.list"
 
 URL_PACKAGE="$URL_REPOSITORY/$PATH_REPO/$PATH_PACKAGE"
@@ -63,11 +62,13 @@ helpmsg()
 {
 	SCRIPT_NAME=`basename $0`
 	echo ""
-	echo "comandi:"
+	echo "usage:"
 	echo ""
 	echo "- install"
-	echo "	installa tomcatctl nella directory corrente"
+	echo "	installs tomcatctl in current directory"
 	echo ""
+	echo "- pack"
+	echo "	packs relevant files in an archive and generates a checksum"
 }
 
 
@@ -87,10 +88,10 @@ then
 	md5sum -c $PATH_PACKAGE.md5 || exit 1
 	
 	echo "scompatto il pacchetto"
-	$BIN_UNZIP $PATH_PACKAGE > /dev/null || exit 1
+	tar xzf $PATH_PACKAGE > /dev/null || exit 1
 	
 	echo "setto i permessi di esecuzione per gli script"
-	chmod +x tomcatctl bin/tomcatctl.sh
+	chmod -R ug+x tomcatctl bin
 	
 	echo "cleanup pacchetto"
 	rm -f $PATH_PACKAGE*
@@ -103,39 +104,6 @@ then
 	
 	echo "creo una directory per i templates"
 	mkdir $DIR_TEMPLATES || exit 1
-	cd $DIR_TEMPLATES
-	
-	echo "scarico la lista templates"
-	$BIN_HTTP "$URL_TEMPLATE_LIST" || exit 1
-	
-	echo "scarico i templates"
-	for template in `cat $PATH_TEMPLATE_LIST`
-	do
-		echo "scarico il template [$template]"
-		$BIN_HTTP $URL_TEMPLATE_DIR/$template.zip
-		
-		echo "scarico il checksum per il template [$template]"
-		$BIN_HTTP $URL_TEMPLATE_DIR/$template.zip.md5
-		
-		echo "eseguo il checksum per il template [$template]"
-		md5sum -c "$template.zip.md5"
-		if [ $? -eq 0 ]
-		then
-			echo "scompatto il template [$template]"
-			$BIN_UNZIP $template.zip > /dev/null || exit 1
-			
-			echo "setto i permessi per l'esecuzione del template [$template]"
-			chmod ug+x $template/bin/*.sh
-		else
-			echo "errore nella verifica del checksum del template [$template]"
-		fi
-		
-		echo "cleanup del pacchetto del template [$template]"
-		rm -f $template.zip*
-	done
-	
-	echo "cleanup file lista templates"
-	rm -f $PATH_TEMPLATE_LIST
 	
 	cd $DIR_BASE
 	
@@ -146,34 +114,36 @@ then
 	echo "scarico la jdk"
 	if [ "$OS" = "cygwin" ]
 	then
-		$BIN_HTTP "$URL_JDK/windows/jdk.zip" || exit 1
+		$BIN_HTTP "$URL_JDK/windows/jdk.tar.gz" || exit 1
 	else
-		$BIN_HTTP "$URL_JDK/linux/jdk.zip" || exit 1
+		$BIN_HTTP "$URL_JDK/linux/jdk.tar.gz" || exit 1
 	fi
 	
 	echo "scarico il checksum per la jdk"
 	if [ "$OS" = "cygwin" ]
 	then
-		$BIN_HTTP "$URL_JDK/windows/jdk.zip.md5" || exit 1
+		$BIN_HTTP "$URL_JDK/windows/jdk.tar.gz.md5" || exit 1
 	else
-		$BIN_HTTP "$URL_JDK/linux/jdk.zip.md5" || exit 1
+		$BIN_HTTP "$URL_JDK/linux/jdk.tar.gz.md5" || exit 1
 	fi
 	
 	echo "eseguo il checksum per la jdk"
-	md5sum -c "jdk.zip.md5" || exit 1
+	md5sum -c "jdk.tar.gz.md5" || exit 1
 	
 	echo "scompatto il pacchetto della jdk"
-	$BIN_UNZIP "jdk.zip" > /dev/null || exit 1
+	tar xzf "jdk.tar.gz" > /dev/null || exit 1
 	
 	echo "setto i permessi di esecuzione per la jdk"
 	chmod ug+x -R bin/* jre/bin/*
 	
 	echo "cleanup jdk"
-	rm -f jdk.zip*
+	rm -f jdk.tar.gz
 	
 	cd $DIR_BASE
 	
 	echo "fine"
+	
+	echo "check conf/tomcatctl.rc for additional configuration"
 	exit 0
 fi
 
@@ -188,26 +158,28 @@ fi
 if [ "$1" = "pack" ]
 then
 	echo "check install"
+	cd $DIR_BASE
+	cd ..
 	test -d bin || exit 1
 	test -d conf || exit 1
 	test -f tomcatctl || exit 1
 	
-	echo "zippo"
-	zip -r tomcatctl.zip bin conf web tomcatctl > /dev/null || exit 1
+	echo "packing..."
+	tar zcf tomcatctl.tar.gz bin conf tomcatctl > /dev/null || exit 1
 	
 	echo "generate checksum"
-	md5sum tomcatctl.zip > tomcatctl.zip.md5
+	md5sum tomcatctl.tar.gz > tomcatctl.tar.gz.md5
 	
-	echo "fine"
+	echo "done"
 	exit 0
 fi
 
 if [ "$1" = "uninstall" ]
 then
-	echo "disinstallo"
-	rm -rf bin conf templates istanze web jdk log tomcatctl
+	echo "uninstalling"
+	#rm -rf bin conf templates istanze web jdk log tomcatctl
 	
-	echo "fine"
+	echo "done"
 	exit 0
 fi
 
