@@ -7,7 +7,7 @@ DIR_BASE=`pwd -P`
 # setup
 # ---------------------------------------------------------
 
-URL_REPOSITORY="http://tomcatctl.mapperr.net/tomcatctl"
+URL_REPOSITORY="http://tomcatctl.mapperr.net"
 
 PATH_REPO="tomcatctl"
 PATH_PACKAGE="tomcatctl.tar.gz"
@@ -140,6 +140,9 @@ then
 	rm -f jdk.tar.gz
 	
 	cd $DIR_BASE
+	
+	echo "modifing repository url"
+	sed -i "s#^URL_TEMPLATE_REPO=.*#URL_TEMPLATE_REPO='$URL_REPOSITORY/$PATH_REPO'#g" "conf/tomcatctl.rc"
 	
 	echo "fine"
 	
