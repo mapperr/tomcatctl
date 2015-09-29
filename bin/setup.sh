@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 
 cd `dirname $0`
 DIR_BASE=`pwd -P`
