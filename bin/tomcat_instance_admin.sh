@@ -91,6 +91,7 @@ tomcatctl_delete()
 	fi
 	
 	istanza="$1"
+	force="$2"
 	
 	DIR_ISTANZA="$DIR_ISTANZE/$istanza"
 	
@@ -113,8 +114,13 @@ tomcatctl_delete()
 		echo "l'istanza e' in running, se si sceglie di eliminarla verra' prima stoppata"
 	fi
 	
-	echo "eliminare [$DIR_ISTANZA]? (y/n)"
-	read c
+	if [ "$force" = "force" ]; then
+		c="y"
+	else
+		echo "eliminare [$DIR_ISTANZA]? (y/n)"
+		read c
+	fi
+	
 	if [ "$c" = "y" ]
 	then
 		if [ $RUNNING -eq 0 ]
