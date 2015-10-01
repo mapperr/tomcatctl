@@ -529,9 +529,11 @@ tomcatctl_export_instance()
 	fi
 	
 	hostname=`hostname`
-	path_exported_file="$dir_export/tomcat-$hostname-$istance.tar.gz"
-	tar zcf $path_exported_file $DIR_ISTANZA/* 2> /dev/null
+	path_exported_file="$dir_export/tomcatctl-exported-$istance-from-$hostname.tar.gz"
+	cd $DIR_ISTANZA
+	tar zcf $path_exported_file * 2> /dev/null
 	RET=$?; if [ $RET -ne 0 ]; then echolog "failed to export istance [$istance]"; return 2; fi
+	cd -
 	
 	echolog "exported instance [$istance] at [$path_exported_file]"
 }
@@ -547,37 +549,43 @@ tomcatctl_import_instance()
 	fi
 	
 	if [ -z "$code" ]; then
-			istanza="00"
+			code="00"
 		
-		while [ -d "$DIR_ISTANZE/$istanza" ]
+		while [ -d "$DIR_ISTANZE/$code" ]
 		do
-			istanza=`expr $istanza + 1`
-			if [ $istanza -lt 10 ]
+			code=`expr $code + 1`
+			if [ $code -lt 10 ]
 			then
-				istanza="0$istanza"
+				code="0$code"
 			fi
 		done
 	else
-		DIR_ISTANZA="$DIR_ISTANZE/$istance"
-		if [ -d "$DIR_ISTANZA" ]
+		if [ -d "$DIR_ISTANZE/$code" ]
 		then
-			echolog "instance [$istance] already exists"
+			echolog "instance [$code] already exists"
 			return 1
 		fi
 	fi
+	
+	DIR_ISTANZA="$DIR_ISTANZE/$code"
+	mkdir "$DIR_ISTANZA"
 	
 	if ! [ -f "$file_istance" ]; then
 		echolog "file [$file_istance] does not exists"
 		return 1
 	fi
 	
-	cd "/tmp"
-	dir_temp=`get_timestamp`
+	dir_temp="/tmp/`get_timestamp`"
 	mkdir $dir_temp
+	cd $dir_temp
 	tar zxf $file_istance
 	RET=$?; if [ $RET -ne 0 ]; then echolog "untar of [$file_istance] failed"; return 2; fi
-	mv $dir_temp $code
-	cd -
+	cd - > /dev/null
+	cd $DIR_ISTANZA
+	mv $dir_temp/* "$DIR_ISTANZA/"
+	cd - > /dev/null
+	
+	if [ -d "$dir_temp" ]; then rm -rf "$dir_temp"; fi
 	
 	echolog "imported file [$file_istance] at code [$code]"
 }
