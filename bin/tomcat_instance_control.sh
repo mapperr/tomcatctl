@@ -50,28 +50,18 @@ tomcatctl_start()
 	then
 		$CATALINA_HOME/bin/startup.sh
 	else
-		echolog "tentativo di avvio con comando su"
-		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "nohup $CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2>> "$FILE_LOG"
+		echolog "tentativo di avvio con comando sudo -u"
+		sudo -u "$CATALINA_USER" CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" nohup bash "$CATALINA_HOME/bin/startup.sh" 2>> "$FILE_LOG"
 		RET=$?
-		
-		# se non si hanno i permessi per utilizzare "su" il comando ritorna 126:
-		# "126 if subshell is found but cannot be invoked"
-		# https://www.gnu.org/software/coreutils/manual/html_node/su-invocation.html
-		if [ $RET -eq 126 ]
+		if [ $RET -ne 0 ]
 		then
-			echolog "tentativo di avvio con comando sudo -u"
-			sudo -u "$CATALINA_USER" CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" nohup bash "$CATALINA_HOME/bin/startup.sh" 2>> "$FILE_LOG"
+			echolog "tentativo di avvio con comando sudo su"
+			sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "nohup $CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2>> "$FILE_LOG"
 			RET=$?
 			if [ $RET -ne 0 ]
 			then
-				echolog "tentativo di avvio con comando sudo su"
-				sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "nohup $CATALINA_HOME/bin/startup.sh" "$CATALINA_USER" 2>> "$FILE_LOG"
-				RET=$?
-				if [ $RET -ne 0 ]
-				then
-					echolog "impossibile avviare il tomcat"
-					return 1
-				fi
+				echolog "impossibile avviare il tomcat"
+				return 1
 			fi
 		fi
 	fi
@@ -130,28 +120,18 @@ tomcatctl_stop()
 	then
 		$CATALINA_HOME/bin/shutdown.sh
 	else
-		echolog "tentativo di arresto con comando su"
-		CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "nohup $CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2>> "$FILE_LOG"
+		echolog "tentativo di arresto con comando sudo -u"
+		sudo -u "$CATALINA_USER" CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" nohup bash "$CATALINA_HOME/bin/shutdown.sh" 2>> "$FILE_LOG"
 		RET=$?
-		
-		# se non si hanno i permessi per utilizzare "su" il comando ritorna 126:
-		# "126 if subshell is found but cannot be invoked"
-		# https://www.gnu.org/software/coreutils/manual/html_node/su-invocation.html
-		if [ $RET -eq 126 ]
+		if [ $RET -ne 0 ]
 		then
-			echolog "tentativo di arresto con comando sudo -u"
-			sudo -u "$CATALINA_USER" CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" nohup bash "$CATALINA_HOME/bin/shutdown.sh" 2>> "$FILE_LOG"
+			echolog "tentativo di arresto con comando sudo su"
+			sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "nohup $CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2>> "$FILE_LOG"
 			RET=$?
 			if [ $RET -ne 0 ]
 			then
-				echolog "tentativo di arresto con comando sudo su"
-				sudo CATALINA_HOME="$DIR_TEMPLATES/$template" CATALINA_BASE="$DIR_ISTANZA" su -s /bin/sh -c "nohup $CATALINA_HOME/bin/shutdown.sh" "$CATALINA_USER" 2>> "$FILE_LOG"
-				RET=$?
-				if [ $RET -ne 0 ]
-				then
-					echolog "impossibile arrestare il tomcat"
-					return 1
-				fi
+				echolog "impossibile arrestare il tomcat"
+				return 1
 			fi
 		fi
 	fi
