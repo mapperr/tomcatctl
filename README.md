@@ -6,26 +6,26 @@ commands:
 
 - ls
 - create [template] [code] [tag]
-- edit <code> <template> [ new_code [tag] ]
-- delete <code>
-- clone <source_code> [destination_code] [destination_tag]
-- attach <path_catalina_home> [code] [tag]
-- detach <code>
-- start | stop | restart <code>
-- info <code>
-- log <code> [tail | cat]
-- export <code> [export_dir]
-- import <file> [code]
+- edit code template [ new_code [tag] ]
+- delete code
+- clone source_code [destination_code] [destination_tag]
+- attach path_catalina_home [code] [tag]
+- detach code
+- start | stop | restart code
+- info code
+- log code [tail | cat]
+- export code [export_dir]
+- import file [code]
 - clean [code [logs]]
 
-- app ls <code>
-- app start | stop | restart | reload <code> <application_context_root> <application_version>
-- app deploy <code> <path_war> [context_root] [version]
-- app undeploy <code> <context_root> [version]
+- app ls code
+- app start | stop | restart | reload code application_context_root application_version
+- app deploy code path_war [context_root] [version]
+- app undeploy code context_root [version]
 
 - template ls
-- template install <template_name>
-- template uninstall <template_name>
+- template install template_name
+- template uninstall template_name
 
 
 ## Installation requirements
