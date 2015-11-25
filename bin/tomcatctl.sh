@@ -217,18 +217,6 @@ if [ "$1" = "log" ]; then
 	exit $?
 fi
 
-if [ "$1" = "deploy" ]; then
-	shift
-	tomcatctl_deploy $@
-	exit $?
-fi
-
-if [ "$1" = "undeploy" ]; then
-	shift
-	tomcatctl_undeploy $@
-	exit $?
-fi
-
 if [ "$1" = "export" ]; then
 	shift
 	tomcatctl_export_instance $1 $2 $3
@@ -275,6 +263,18 @@ if [ "$1" = "app" ]; then
 			exit $RET
 		fi
 		exit $RET
+	fi
+
+	if [ "$1" = "deploy" ]; then
+		shift
+		tomcatctl_deploy $@
+		exit $?
+	fi
+
+	if [ "$1" = "undeploy" ]; then
+		shift
+		tomcatctl_undeploy $@
+		exit $?
 	fi
 fi
 
