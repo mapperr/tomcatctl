@@ -58,7 +58,7 @@ helpmsg()
 	test $full && echo "	lists templates and instances under control" && echo ""
 	echo "- create [template] [code] [tag]"
 	test $full && echo "	creates a new instance" && echo ""
-	echo "- edit <code> <template> [ new_code [tag] ]"
+	echo "- edit <code> <new_template> [ new_code [new_tag] ]"
 	test $full && echo "	modify an instance" && echo ""
 	echo "- delete <code> [force]"
 	test $full && echo "	deletes an instance. If [force] is specified then does not show confirmation" && echo ""
