@@ -48,6 +48,8 @@ helpmsg()
 	SCRIPT_NAME=`basename $0`
   full=$1
 
+	echo "version 1.0.1"
+	echo ""
 	echo ""
 	echo "commands:"
 	echo ""
@@ -240,15 +242,15 @@ if [ "$1" = "app" ]; then
 		shift
 		tomcatctl_appstart $@
 		exit $?
-	elif [ "$1" = "appstop" ]; then
+	elif [ "$1" = "stop" ]; then
 		shift
 		tomcatctl_appstop $@
 		exit $?
-	elif [ "$1" = "appreload" ]; then
+	elif [ "$1" = "reload" ]; then
 		shift
 		tomcatctl_appreload $@
 		exit $?
-	elif [ "$1" = "apprestart" ]; then
+	elif [ "$1" = "restart" ]; then
 		shift
 		tomcatctl_appstop $@
 		RET=$?
@@ -274,6 +276,12 @@ if [ "$1" = "app" ]; then
 	if [ "$1" = "undeploy" ]; then
 		shift
 		tomcatctl_undeploy $@
+		exit $?
+	fi
+
+	if [ "$1" = "install" ]; then
+		shift
+		tomcatctl_appinstall $@
 		exit $?
 	fi
 fi

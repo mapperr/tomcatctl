@@ -289,3 +289,136 @@ tomcatctl_appreload()
 	$HTTP_BIN "$URL"
 }
 
+tomcatctl_get_artifact()
+{
+	local name="$1"
+	local version="$2"
+
+	if [ -z "$name" ]; then
+		helpmsg
+		return 1
+	fi
+
+	file_artifact_unversioned=`$HTTP_BIN "$URL_ARTIFACT_REPO" | grep -o ">$name.war" | sed 's/>//'`
+	file_artifact=`$HTTP_BIN "$URL_ARTIFACT_REPO" | grep -o ">$name##$version.war" | sed 's/>//'`
+
+	if [ -z "$version" ]; then
+		if [ -z "$file_artifact_unversioned" ]; then
+			echolog "no artifact found" >&2
+			return 1
+		fi
+		echo "$file_artifact_unversioned"
+		return 0
+	fi
+
+	if [ -z "$file_artifact" ]; then
+		echolog "no artifact found" >&2
+		return 1
+	fi
+
+	echo "$file_artifact"
+}
+
+tomcatctl_get_context_file()
+{
+	local name="$1"
+	local version="$2"
+
+	if [ -z "$name" ]; then
+		helpmsg
+		return 1
+	fi
+
+	file_context_unversioned=`$HTTP_BIN "$URL_ARTIFACT_REPO" | grep -o ">$name.xml" | sed 's/>//'`
+	files_context_versioned=`$HTTP_BIN "$URL_ARTIFACT_REPO" | grep -o ">$name##.*.xml" | sed 's/>//' | sort -r`
+
+	file_context="$file_context_unversioned"
+
+	if [ -z "$version" ]; then
+		if [ -z "$file_context" ]; then
+			echolog "no context file found" >&2
+			return 1
+		fi
+		echo "$file_context"
+		return 0
+	fi
+
+	for file_context_versioned in $files_context_versioned; do
+		file_context_version=`echo $file_context_versioned | sed -e 's/##/|/' -e 's/\.xml$//' | cut -d "|" -f 2`
+		if [ "$version" = "$file_context_version" ]; then
+			file_context="$file_context_versioned"
+			break
+		fi
+		if [ "$version" '>' "$file_context_version" ]; then
+			file_context="$file_context_versioned"
+			break
+		fi
+	done
+
+	if [ -z "$file_context" ]; then
+		echolog "no context file found" >&2
+		return 1
+	fi
+
+	echo "$file_context"
+}
+
+tomcatctl_appinstall()
+{
+	local instance="$1"
+	local name="$2"
+	local version="$3"
+
+	if [ -z "$instance" ] || [ -z "$name" ]
+	then
+		helpmsg
+		return 1
+	fi
+
+	artifact_file=`tomcatctl_get_artifact $name $version`
+	context_file=`tomcatctl_get_context_file $name $version`
+ 
+	if [ -z "$artifact_file" ]; then
+		echolog "artifact [$name] not found at version [$version]" >&2
+		return 1
+	fi
+
+	if [ -z "$context_file" ]; then
+		echolog "context file [$name] not found at version [$version]" >&2
+		return 1
+	fi
+
+	url_artifact=`echo "$URL_ARTIFACT_REPO/$artifact_file" | sed 's/#/%23/g'`
+	url_context_file=`echo "$URL_ARTIFACT_REPO/$context_file" | sed 's/#/%23/g'`
+
+	cd /tmp
+	$HTTP_BIN_DOWNLOAD "$url_artifact"
+	if [ $? -ne 0 ]; then echolog "error downloading artifact from [$url_artifact]" >&2; return 1; fi
+
+	$HTTP_BIN_DOWNLOAD "$url_context_file"
+	if [ $? -ne 0 ]; then echolog "error downloading context file from [$url_context_file]" >&2; return 1; fi
+	cd - >/dev/null
+
+	unpacked_artifact_name="$name##$version"
+	if [ -z "$version" ]; then
+		unpacked_artifact_name="$name"
+	fi
+
+	rm -f  $DIR_ISTANZE/$instance/conf/Catalina/localhost/$name.xml
+	rm -f  $DIR_ISTANZE/$instance/conf/Catalina/localhost/$name##*.xml
+	rm -rf $DIR_ISTANZE/$instance/webapps/$name
+	rm -rf $DIR_ISTANZE/$instance/webapps/$name##*
+
+	mv /tmp/$context_file $DIR_ISTANZE/$instance/conf/Catalina/localhost/$unpacked_artifact_name.xml
+	unzip -d $DIR_ISTANZE/$instance/webapps/$unpacked_artifact_name /tmp/$artifact_file >/dev/null
+
+	if [ ! -z "$CATALINA_GROUP" ]; then
+		chgrp $CATALINA_GROUP -R $DIR_ISTANZE/$instance 2>/dev/null
+		chmod -R g+rw $DIR_ISTANZE/$instance 2>/dev/null
+	fi
+
+	test -f /tmp/$artifact_file && rm -f $artifact_file
+	test -f /tmp/$context_file && rm -f $context_file
+
+	echolog "installed [$name] at version [$version] on instance [$instance]"
+}
