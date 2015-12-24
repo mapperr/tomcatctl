@@ -91,6 +91,8 @@ helpmsg()
 	test $full && echo "	deploys the war on target instance" && echo ""
 	echo "- app undeploy <code> <context_root> <version>"
 	test $full && echo "	undeploy an application" && echo ""
+	echo "- app install <code> <app_name> [version]"
+	test $full && echo "	installs the application <app_name> at version [version] and removes other versions" && echo ""
 	echo ""
 	echo "- template ls"
 	test $full && echo "	list installed and available templates" && echo ""
