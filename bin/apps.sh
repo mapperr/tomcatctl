@@ -316,6 +316,7 @@ tomcatctl_get_artifact()
 		return 1
 	fi
 
+	echolog "found artifact [$file_artifact]" >&2
 	echo "$file_artifact"
 }
 
@@ -360,6 +361,7 @@ tomcatctl_get_context_file()
 		return 1
 	fi
 
+	echolog "found context file [$file_context]" >&2
 	echo "$file_context"
 }
 
@@ -421,4 +423,17 @@ tomcatctl_appinstall()
 	test -f /tmp/$context_file && rm -f $context_file
 
 	echolog "installed [$name] at version [$version] on instance [$instance]"
+}
+
+
+tomcatctl_applist_repo()
+{
+	search_string="$1"
+
+	if [ -z "$search_string" ]; then
+		$HTTP_BIN "$URL_ARTIFACT_REPO" | grep -o ">.*<" | grep -e "\.war" -e "\.xml" | sed -e 's/>//' -e 's/<//' | sort
+		exit 0
+	fi
+
+	$HTTP_BIN "$URL_ARTIFACT_REPO" | grep -o ">.*<" | grep -e "\.war" -e "\.xml" | sed -e 's/>//' -e 's/<//' | sort | grep -i "$search_string"
 }

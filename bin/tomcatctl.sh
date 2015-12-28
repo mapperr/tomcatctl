@@ -85,6 +85,8 @@ helpmsg()
 	echo ""
 	echo "- app ls <code>"
 	test $full && echo "	lists applications deployed on the instance" && echo ""
+	echo "- app repo [search_string]"
+	test $full && echo "	lists artifacts available on the repository, optionally filtered by search_string" && echo ""
 	echo "- app start | stop | restart | reload <code> <application_context_root> <application_version>"
 	test $full && echo "	controls an application" && echo ""
 	echo "- app deploy <code> <path_war> [context_root] [version]"
@@ -239,6 +241,10 @@ if [ "$1" = "app" ]; then
 	if [ "$1" = "ls" ]; then
 		shift
 		tomcatctl_info_apps $@
+		exit $?
+	elif [ "$1" = "repo" ]; then
+		shift
+		tomcatctl_applist_repo $@
 		exit $?
 	elif [ "$1" = "start" ]; then
 		shift
