@@ -419,8 +419,8 @@ tomcatctl_appinstall()
 		chmod -R g+rw $DIR_ISTANZE/$instance 2>/dev/null
 	fi
 
-	test -f /tmp/$artifact_file && rm -f $artifact_file
-	test -f /tmp/$context_file && rm -f $context_file
+	test -f /tmp/$artifact_file && rm -f /tmp/$artifact_file
+	test -f /tmp/$context_file && rm -f /tmp/$context_file
 
 	echolog "installed [$name] at version [$version] on instance [$instance]"
 }
