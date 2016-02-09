@@ -12,7 +12,7 @@ CATALINA_GROUP="tomcatctl"
 DEFAULT_TEMPLATE="base"
 
 # the url to the template repository
-URL_TEMPLATE_REPO="http://tomcatctl.mapperr.net/tomcatctl"
+URL_TEMPLATE_REPO="http://tomcatctl.mapperr.net/templates"
 
 # artifact repo
 URL_ARTIFACT_REPO="http://tomcatctl.mapperr.net/artifacts"
@@ -49,6 +49,9 @@ TOMCAT_MANAGER_PASSWORD="tomcatctl"
 TOMCAT_MANAGER_USERS_LINE="<user username=\"$TOMCAT_MANAGER_USERNAME\" password=\"$TOMCAT_MANAGER_PASSWORD\" roles=\"manager-script\"/>"
 DIR_TOMCAT_MANAGER_RUNTIME="$DIR_CONF_TEMPLATE_SKELETONS/webapps/$TOMCAT_MANAGER_CONTEXT"
 TOMCAT_MANAGER_CONTEXT_PLACEHOLDER="tomcatctl_manager_docbase_placeholder"
+
+# contexts not available to user manipulation
+RESERVED_CONTEXTS="$TOMCAT_MANAGER_CONTEXT tomee probe"
 
 # filenames
 FILENAME_TEMPLATE="TEMPLATE"

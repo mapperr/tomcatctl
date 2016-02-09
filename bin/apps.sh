@@ -1,3 +1,20 @@
+tomcatctl_is_reserved_contexts()
+{
+	local context="$1"
+
+	if echo $context | grep "^/" >/dev/null; then
+		context=`echo $context | sed 's#^/##'`
+	fi
+
+	for reserved_context in $RESERVED_CONTEXTS; do
+		if [ "$reserved_context" = "$context" ]; then
+			return 0
+		fi
+	done
+
+	return 1
+}
+
 tomcatctl_info_apps()
 {
 	if [ -z "$1" ]
@@ -28,8 +45,13 @@ tomcatctl_info_apps()
 	fi
 	
 	URL="http://$TOMCAT_MANAGER_USERNAME:$TOMCAT_MANAGER_PASSWORD@localhost:$HTTP_PORT/$TOMCAT_MANAGER_CONTEXT/text/list"
-	APPS=`$HTTP_BIN "$URL" | grep -v "^OK"  | grep -v ^/$TOMCAT_MANAGER_CONTEXT | sed 's/:/ /g'`
-	
+
+	APPS="`$HTTP_BIN "$URL" | grep -v "^OK" | sed 's/:/ /g'`"
+
+	for reserved_context in $RESERVED_CONTEXTS; do
+		APPS="`echo "$APPS" | grep -v "^/$reserved_context\b"`"
+	done
+
 	while IFS= read -r line
 	do
 		context=`echo "$line" | awk '{print $1}'`
@@ -73,9 +95,8 @@ tomcatctl_undeploy()
 		return 1
 	fi
 	
-	if [ "`echo "$context" | sed 's/\///g'`" = "$TOMCAT_MANAGER_CONTEXT" ]
-	then
-		echo "impossibile effettuare l'undeploy del tomcat manager"
+	if tomcatctl_is_reserved_contexts "$context"; then
+		echo "cannot undeploy a reserved context"
 		return 4
 	fi
 	
@@ -123,9 +144,8 @@ tomcatctl_deploy()
 		return 1
 	fi
 	
-	if [ "`echo "$context" | sed 's/\///g'`" = "$TOMCAT_MANAGER_CONTEXT" ]
-	then
-		echolog "impossibile effettuare il deploy di un'applicazione con il context path del tomcat manager"
+	if tomcatctl_is_reserved_contexts "$context"; then
+		echolog "cannot deploy to a reserved context"
 		return 4
 	fi
 	
@@ -159,10 +179,6 @@ tomcatctl_deploy()
 	$HTTP_BIN "$URL"
 }
 
-
-# args:
-# - istanza
-# - context applicazione
 tomcatctl_appstart()
 {
 	if [ -z "$1" ] || [ -z "$2" ]
@@ -204,9 +220,6 @@ tomcatctl_appstart()
 	$HTTP_BIN "$URL"
 }
 
-# args:
-# - istanza
-# - context applicazione
 tomcatctl_appstop()
 {
 	if [ -z "$1" ] || [ -z "$2" ]
@@ -230,6 +243,11 @@ tomcatctl_appstop()
 	then
 		echolog "istanza non disponibile"
 		return 1
+	fi
+	
+	if tomcatctl_is_reserved_contexts "$context"; then
+		echolog "cannot stop a reserved context"
+		return 4
 	fi
 	
 	HTTP_PORT="90$istanza"
@@ -271,6 +289,11 @@ tomcatctl_appreload()
 	then
 		echolog "istanza non disponibile"
 		return 1
+	fi
+	
+	if tomcatctl_is_reserved_contexts "$context"; then
+		echolog "cannot reload a reserved context"
+		return 4
 	fi
 	
 	HTTP_PORT="90$istanza"
@@ -368,25 +391,30 @@ tomcatctl_get_context_file()
 tomcatctl_appinstall()
 {
 	local instance="$1"
-	local name="$2"
+	local context="$2"
 	local version="$3"
 
-	if [ -z "$instance" ] || [ -z "$name" ]
+	if [ -z "$instance" ] || [ -z "$context" ]
 	then
 		helpmsg
 		return 1
 	fi
+	
+	if tomcatctl_is_reserved_contexts "$context"; then
+		echolog "cannot install with a reserved context"
+		return 4
+	fi
 
-	artifact_file=`tomcatctl_get_artifact $name $version`
-	context_file=`tomcatctl_get_context_file $name $version`
+	artifact_file=`tomcatctl_get_artifact $context $version`
+	context_file=`tomcatctl_get_context_file $context $version`
  
 	if [ -z "$artifact_file" ]; then
-		echolog "artifact [$name] not found at version [$version]" >&2
+		echolog "artifact [$context] not found at version [$version]" >&2
 		return 1
 	fi
 
 	if [ -z "$context_file" ]; then
-		echolog "context file [$name] not found at version [$version]" >&2
+		echolog "context file [$context] not found at version [$version]" >&2
 		return 1
 	fi
 
@@ -401,15 +429,15 @@ tomcatctl_appinstall()
 	if [ $? -ne 0 ]; then echolog "error downloading context file from [$url_context_file]" >&2; return 1; fi
 	cd - >/dev/null
 
-	unpacked_artifact_name="$name##$version"
+	unpacked_artifact_name="$context##$version"
 	if [ -z "$version" ]; then
-		unpacked_artifact_name="$name"
+		unpacked_artifact_name="$context"
 	fi
 
-	rm -f  $DIR_ISTANZE/$instance/conf/Catalina/localhost/$name.xml
-	rm -f  $DIR_ISTANZE/$instance/conf/Catalina/localhost/$name##*.xml
-	rm -rf $DIR_ISTANZE/$instance/webapps/$name
-	rm -rf $DIR_ISTANZE/$instance/webapps/$name##*
+	rm -f  $DIR_ISTANZE/$instance/conf/Catalina/localhost/$context.xml
+	rm -f  $DIR_ISTANZE/$instance/conf/Catalina/localhost/$context##*.xml
+	rm -rf $DIR_ISTANZE/$instance/webapps/$context
+	rm -rf $DIR_ISTANZE/$instance/webapps/$context##*
 
 	mv /tmp/$context_file $DIR_ISTANZE/$instance/conf/Catalina/localhost/$unpacked_artifact_name.xml
 	unzip -d $DIR_ISTANZE/$instance/webapps/$unpacked_artifact_name /tmp/$artifact_file >/dev/null
@@ -422,7 +450,7 @@ tomcatctl_appinstall()
 	test -f /tmp/$artifact_file && rm -f /tmp/$artifact_file
 	test -f /tmp/$context_file && rm -f /tmp/$context_file
 
-	echolog "installed [$name] at version [$version] on instance [$instance]"
+	echolog "installed [$context] at version [$version] on instance [$instance]"
 }
 
 
